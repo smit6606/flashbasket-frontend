@@ -1,0 +1,301 @@
+'use client';
+
+import React, { useEffect, useState, use } from 'react';
+import { api } from '@/lib/api';
+import {
+    Box,
+    Typography,
+    Container,
+    Grid,
+    Stack,
+    Button,
+    Card,
+    CardContent,
+    IconButton,
+    Chip,
+    alpha,
+    Paper,
+    Skeleton,
+    Avatar,
+    Divider,
+} from '@mui/material';
+import {
+    Storefront as StoreIcon,
+    MyLocation as LocationIcon,
+    Verified as VerifiedIcon,
+    Add as AddIcon,
+    ShoppingBagOutlined as BagIcon,
+    Star as StarIcon,
+    ArrowBack as BackIcon,
+} from '@mui/icons-material';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
+import Link from 'next/link';
+
+interface Product {
+    id: number;
+    productName: string;
+    price: string;
+    images: string[];
+    unit: string;
+}
+
+interface Seller {
+    id: number;
+    shop_name: string;
+    shop_description: string;
+    shop_image: string;
+    shop_address: string;
+}
+
+export default function SellerProfilePage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
+    const router = useRouter();
+    const { user } = useAuth();
+    const [products, setProducts] = useState<Product[]>([]);
+    const [seller, setSeller] = useState<Seller | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    const addToCart = async (e: React.MouseEvent, product: Product) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!user) {
+            router.push('/login');
+            return;
+        }
+
+        try {
+            await api.post('/cart/add', {
+                productId: product.id,
+                sellerId: seller?.id,
+                price: product.price,
+                quantity: 1
+            });
+            toast.success(`${product.productName} added to cart!`);
+        } catch (error: any) {
+            console.error('Failed to add to cart', error);
+            toast.error(error.response?.data?.message || 'Failed to add to cart');
+        }
+    };
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const [sellerRes, productsRes] = await Promise.all([
+                    api.get(`/sellers/${id}`),
+                    api.get(`/products?sellerId=${id}`)
+                ]);
+                setSeller(sellerRes.data);
+                setProducts(productsRes.data);
+            } catch (err) {
+                console.error('Failed to fetch seller data', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [id]);
+
+    if (loading) return (
+        <Container maxWidth="lg" sx={{ py: 4 }}>
+            <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 8, mb: 6 }} />
+            <Grid container spacing={4}>
+                {[...Array(8)].map((_, i) => (
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
+                        <Skeleton variant="rectangular" height={250} sx={{ borderRadius: 6 }} />
+                    </Grid>
+                ))}
+            </Grid>
+        </Container>
+    );
+
+    if (!seller) return (
+        <Container sx={{ py: 20, textAlign: 'center' }}>
+            <Typography variant="h4" sx={{ fontWeight: 900, mb: 2 }}>Seller Not Found</Typography>
+            <Button variant="contained" component={Link} href="/" startIcon={<BackIcon />} sx={{ borderRadius: 4 }}>
+                Back to Marketplace
+            </Button>
+        </Container>
+    );
+
+    return (
+        <Container maxWidth="lg" sx={{ py: 4 }}>
+            {/* Seller Header Section */}
+            <Paper elevation={0} sx={{
+                position: 'relative',
+                height: 350,
+                borderRadius: 10,
+                overflow: 'hidden',
+                mb: 8,
+                bgcolor: '#0f172a'
+            }}>
+                {seller.shop_image ? (
+                    <img
+                        src={seller.shop_image}
+                        alt={seller.shop_name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }}
+                    />
+                ) : (
+                    <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: alpha('#0C831F', 0.1) }}>
+                        <StoreIcon sx={{ fontSize: 100, color: 'primary.main', opacity: 0.2 }} />
+                    </Box>
+                )}
+
+                <Box sx={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    p: { xs: 4, md: 6 },
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%)'
+                }}>
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={4} alignItems={{ xs: 'flex-start', md: 'center' }} justifyContent="space-between">
+                        <Box>
+                            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
+                                <Typography variant="h2" sx={{ fontWeight: 900, color: 'white', letterSpacing: '-0.02em' }}>
+                                    {seller.shop_name}
+                                </Typography>
+                                <Chip
+                                    icon={<VerifiedIcon sx={{ color: '#4cc9f0 !important' }} />}
+                                    label="VERIFIED STORE"
+                                    size="small"
+                                    sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 900, border: '1px solid rgba(255,255,255,0.2)' }}
+                                />
+                            </Stack>
+                            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 600, maxWidth: 600, mb: 3 }}>
+                                {seller.shop_description || 'Serving high-quality products with lightning-fast delivery to your doorstep.'}
+                            </Typography>
+                            <Stack direction="row" spacing={3} sx={{ color: 'white' }}>
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                    <LocationIcon sx={{ color: 'primary.main', fontSize: 18 }} />
+                                    <Typography variant="body2" sx={{ fontWeight: 800 }}>{seller.shop_address || 'Nearby Location'}</Typography>
+                                </Stack>
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                    <StarIcon sx={{ color: '#ffb703', fontSize: 18 }} />
+                                    <Typography variant="body2" sx={{ fontWeight: 800 }}>4.9 Rating</Typography>
+                                </Stack>
+                            </Stack>
+                        </Box>
+
+                        <Button
+                            variant="contained"
+                            size="large"
+                            sx={{
+                                borderRadius: 4,
+                                px: 4,
+                                py: 1.5,
+                                fontWeight: 900,
+                                bgcolor: 'white',
+                                color: 'black',
+                                '&:hover': { bgcolor: alpha('#ffffff', 0.9) }
+                            }}
+                        >
+                            Follow Store
+                        </Button>
+                    </Stack>
+                </Box>
+            </Paper>
+
+            {/* products Section */}
+            <Box sx={{ mb: 10 }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 6 }}>
+                    <Box>
+                        <Typography variant="h3" sx={{ fontWeight: 900, letterSpacing: '-0.02em' }}>Available items</Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 700, mt: 1 }}>
+                            Fresh stock from {seller.shop_name}
+                        </Typography>
+                    </Box>
+                    <Chip
+                        label={`${products.length} Products`}
+                        sx={{ fontWeight: 900, bgcolor: '#f1f5f9', p: 2 }}
+                    />
+                </Stack>
+
+                {products.length === 0 ? (
+                    <Card elevation={0} sx={{ py: 10, textAlign: 'center', borderRadius: 8, border: '2px dashed #e2e8f0', bgcolor: '#f8fafc' }}>
+                        <BagIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2, opacity: 0.5 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.secondary' }}>This store hasn't listed any products yet.</Typography>
+                        <Typography variant="body2" sx={{ color: 'text.disabled', fontWeight: 700, mt: 1, textTransform: 'uppercase' }}>Check back later for fresh updates</Typography>
+                    </Card>
+                ) : (
+                    <Grid container spacing={4}>
+                        {products.map((product) => (
+                            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={product.id}>
+                                <Card
+                                    component={Link}
+                                    href={`/products/${product.id}`}
+                                    elevation={0}
+                                    sx={{
+                                        borderRadius: 8,
+                                        border: '1px solid #f1f5f9',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        textDecoration: 'none',
+                                        color: 'inherit',
+                                        '&:hover': {
+                                            transform: 'translateY(-8px)',
+                                            boxShadow: '0 20px 40px rgba(0,0,0,0.06)',
+                                            borderColor: 'primary.main',
+                                            '& .add-btn': { bgcolor: 'primary.main', color: 'white', transform: 'scale(1.1)' }
+                                        }
+                                    }}
+                                >
+                                    <Box sx={{ p: 2 }}>
+                                        <Box sx={{
+                                            height: 200,
+                                            borderRadius: 6,
+                                            bgcolor: '#f8fafc',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            overflow: 'hidden',
+                                            p: 3,
+                                            position: 'relative'
+                                        }}>
+                                            <img
+                                                src={product.images && product.images[0] ? product.images[0] : 'https://placehold.co/400x400?text=FlashBasket'}
+                                                alt={product.productName}
+                                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                            />
+                                        </Box>
+
+                                        <Box sx={{ p: 2 }}>
+                                            <Typography variant="subtitle1" sx={{ fontWeight: 900, mb: 0.5, lineClamp: 1, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                {product.productName}
+                                            </Typography>
+                                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, display: 'block', mb: 2 }}>
+                                                {product.unit}
+                                            </Typography>
+
+                                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                                <Typography variant="h5" sx={{ fontWeight: 900 }}>
+                                                    ₹{product.price}
+                                                </Typography>
+                                                <IconButton
+                                                    className="add-btn"
+                                                    onClick={(e) => addToCart(e, product)}
+                                                    sx={{
+                                                        bgcolor: '#f1f5f9',
+                                                        color: 'primary.main',
+                                                        borderRadius: 4,
+                                                        width: 44,
+                                                        height: 44,
+                                                        transition: 'all 0.3s'
+                                                    }}
+                                                >
+                                                    <AddIcon sx={{ fontWeight: 900 }} />
+                                                </IconButton>
+                                            </Stack>
+                                        </Box>
+                                    </Box>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
+                )}
+            </Box>
+        </Container>
+    );
+}

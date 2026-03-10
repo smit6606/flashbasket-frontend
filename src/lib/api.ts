@@ -32,10 +32,23 @@ export const apiFetch = async (endpoint: string, options: FetchOptions = {}) => 
     headers,
   });
 
-  const data = await response.json();
+  let data;
+  const contentType = response.headers.get('content-type');
+  
+  if (contentType && contentType.includes('application/json')) {
+    try {
+      data = await response.json();
+    } catch (e) {
+      console.error('Failed to parse JSON response', e);
+      data = { message: 'Failed to parse server response' };
+    }
+  } else {
+    const text = await response.text();
+    data = { message: text || 'Empty or non-JSON response from server' };
+  }
 
   if (!response.ok) {
-    throw new Error(data.message || 'Something went wrong');
+    throw new Error(data.message || data.error || 'Something went wrong');
   }
 
   return data;
