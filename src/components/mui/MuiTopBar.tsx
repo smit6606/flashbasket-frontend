@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
     AppBar,
     Toolbar,
@@ -10,6 +10,10 @@ import {
     Badge,
     Tooltip,
     Avatar,
+    Menu,
+    MenuItem,
+    ListItemIcon,
+    Divider,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
@@ -17,9 +21,13 @@ import {
     Search as SearchIcon,
     HelpOutline as HelpIcon,
     Launch as LaunchIcon,
+    Settings as SettingsIcon,
+    Person as PersonIcon,
+    Logout as LogoutIcon,
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 const DRAWER_WIDTH = 280;
 
@@ -28,7 +36,31 @@ interface TopBarProps {
 }
 
 export default function MuiTopBar({ onMenuClick }: TopBarProps) {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
+    const router = useRouter();
+
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const open = Boolean(anchorEl);
+
+    const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleLogout = () => {
+        handleClose();
+        logout();
+        router.push('/login');
+    };
+
+    const handleProfile = () => {
+        handleClose();
+        const role = user?.role || 'user';
+        router.push(`/${role}/profile`);
+    };
 
     return (
         <AppBar
@@ -83,7 +115,10 @@ export default function MuiTopBar({ onMenuClick }: TopBarProps) {
 
                     <Box sx={{ width: 1, height: 24, bgcolor: 'divider', mx: 1 }} />
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', p: 0.5, borderRadius: 2, '&:hover': { bgcolor: 'slate.50' } }}>
+                    <Box 
+                        onClick={handleClick}
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', p: 0.5, borderRadius: 2, '&:hover': { bgcolor: 'slate.50' } }}
+                    >
                         <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.9rem', fontWeight: 800 }}>
                             {user?.user_name?.charAt(0).toUpperCase() || 'A'}
                         </Avatar>
@@ -96,6 +131,64 @@ export default function MuiTopBar({ onMenuClick }: TopBarProps) {
                             </Typography>
                         </Box>
                     </Box>
+
+                    <Menu
+                        anchorEl={anchorEl}
+                        open={open}
+                        onClose={handleClose}
+                        onClick={handleClose}
+                        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                        PaperProps={{
+                            elevation: 0,
+                            sx: {
+                                overflow: 'visible',
+                                filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.1))',
+                                mt: 1.5,
+                                minWidth: 200,
+                                borderRadius: 3,
+                                '& .MuiAvatar-root': {
+                                    width: 32,
+                                    height: 32,
+                                    ml: -0.5,
+                                    mr: 1,
+                                },
+                                '&:before': {
+                                    content: '""',
+                                    display: 'block',
+                                    position: 'absolute',
+                                    top: 0,
+                                    right: 14,
+                                    width: 10,
+                                    height: 10,
+                                    bgcolor: 'background.paper',
+                                    transform: 'translateY(-50%) rotate(45deg)',
+                                    zIndex: 0,
+                                },
+                            },
+                        }}
+                    >
+                        <MenuItem onClick={handleProfile}>
+                            <ListItemIcon>
+                                <PersonIcon fontSize="small" />
+                            </ListItemIcon>
+                            Profile Settings
+                        </MenuItem>
+                        <MenuItem onClick={handleClose}>
+                            <ListItemIcon>
+                                <SettingsIcon fontSize="small" />
+                            </ListItemIcon>
+                            Account Settings
+                        </MenuItem>
+                        <Divider />
+                        <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+                            <ListItemIcon>
+                                <LogoutIcon fontSize="small" sx={{ color: 'error.main' }} />
+                            </ListItemIcon>
+                            Logout
+                        </MenuItem>
+                    </Menu>
+
                 </Box>
             </Toolbar>
         </AppBar>

@@ -45,6 +45,8 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (loading) return;
+    
     if (!token) {
       router.push('/login');
       return;

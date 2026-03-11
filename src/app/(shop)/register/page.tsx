@@ -36,8 +36,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
-  const { login } = useAuth();
+  const { login, user, loading: authLoading } = useAuth();
   const router = useRouter();
+
+  React.useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role === 'admin') router.replace('/admin');
+      else if (user.role === 'seller') router.replace('/seller');
+      else if (user.role === 'delivery') router.replace('/delivery');
+      else router.replace('/');
+    }
+  }, [user, authLoading, router]);
+
   const [role, setRole] = useState('user');
   const [formData, setFormData] = useState({
     user_name: '',
@@ -167,7 +177,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <Grid container component="main" sx={{ minHeight: '100vh', mt: -8, mb: -5, ml: -5, width: 'calc(100% + 40px)' }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 4, md: 8 }, display: 'flex', flexGrow: 1 }}>
+      <Grid container component="main" sx={{ width: '100%', minHeight: '75vh', borderRadius: 6, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.08)', border: '1px solid #f1f5f9' }}>
       <Grid
         size={{ xs: 0, sm: 4, md: 6 }}
         sx={{
@@ -481,6 +492,7 @@ export default function RegisterPage() {
           </Typography>
         </Box>
       </Grid>
-    </Grid>
+      </Grid>
+    </Container>
   );
 }

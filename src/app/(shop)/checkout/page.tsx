@@ -40,7 +40,9 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import StripePayment from '@/components/StripePayment';
+import UpiQrPayment from '@/components/UpiQrPayment';
 import { toast } from 'react-toastify';
+import { QrCode as QrIcon } from '@mui/icons-material';
 
 interface CartItem {
     id: number;
@@ -58,12 +60,15 @@ interface CartItem {
 const steps = ['Shipping Address', 'Payment Method', 'Review Order'];
 
 export default function CheckoutPage() {
-    const { token } = useAuth();
+    const { token, loading: authLoading } = useAuth();
     const router = useRouter();
     const [activeStep, setActiveStep] = useState(0);
     const [cart, setCart] = useState<{ items: CartItem[]; subtotal: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [placingOrder, setPlacingOrder] = useState(false);
+    const [clientSecret, setClientSecret] = useState<string | null>(null);
+    const [showUpiQR, setShowUpiQR] = useState(false);
+    const [upiDetails, setUpiDetails] = useState<{ amount: number; groupId: string } | null>(null);
 
     const [address, setAddress] = useState({
         street: '',
@@ -72,10 +77,12 @@ export default function CheckoutPage() {
         zip: '',
     });
 
-    const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'cod'>('cod');
+    const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'cod' | 'upi'>('cod');
     const deliveryFee = 25;
 
     useEffect(() => {
+        if (authLoading) return;
+
         if (!token) {
             router.push('/login');
             return;
@@ -117,13 +124,25 @@ export default function CheckoutPage() {
         setPlacingOrder(true);
         try {
             const fullAddress = `${address.street}, ${address.city}, ${address.state} - ${address.zip}`;
-            await api.post('/orders/create', {
+            const response = await api.post('/orders/create', {
                 deliveryAddress: fullAddress,
                 paymentMethod,
                 totalAmount: calculateTotal(),
                 latitude: 21.1702,
                 longitude: 72.8311
             });
+            
+            if (paymentMethod === 'stripe' && response.data?.clientSecret) {
+                setClientSecret(response.data.clientSecret);
+                return;
+            }
+
+            if (paymentMethod === 'upi' && response.data?.groupId) {
+                setUpiDetails({ amount: calculateTotal(), groupId: response.data.groupId });
+                setShowUpiQR(true);
+                return;
+            }
+
             toast.success('Order placed successfully!');
             router.push('/order-success');
         } catch (err: any) {
@@ -150,8 +169,30 @@ export default function CheckoutPage() {
                 return (
                     <Grid container spacing={3}>
                         <Grid size={{ xs: 12 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>Shipping Address</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>Shipping Address & Location</Typography>
                         </Grid>
+                        
+                        <Grid size={{ xs: 12 }}>
+                            <Paper elevation={0} sx={{ height: 300, width: '100%', borderRadius: 4, overflow: 'hidden', border: '1px solid #f1f5f9', position: 'relative' }}>
+                                {/* Use Google Maps API here */}
+                                <Box sx={{ width: '100%', height: '100%', bgcolor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Stack alignItems="center" spacing={1} sx={{ opacity: 0.5 }}>
+                                        <Box sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: 'primary.main', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', mb: 1 }}>
+                                            <span style={{ fontSize: 24 }}>📍</span>
+                                        </Box>
+                                        <Typography variant="body2" sx={{ fontWeight: 800 }}>Loading Google Maps...</Typography>
+                                    </Stack>
+                                </Box>
+                                {/* Nearby drivers overlay */}
+                                <Box sx={{ position: 'absolute', bottom: 16, right: 16, bgcolor: 'white', px: 2, py: 1, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                                    <Typography variant="caption" sx={{ fontWeight: 900, color: '#0C831F' }}>🟢 4 Drivers Nearby</Typography>
+                                </Box>
+                            </Paper>
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1, display: 'block' }}>
+                                Drag pin to exact location or use "Locate Me".
+                            </Typography>
+                        </Grid>
+
                         <Grid size={{ xs: 12 }}>
                             <TextField
                                 required
@@ -233,6 +274,31 @@ export default function CheckoutPage() {
                                                 p: 3,
                                                 borderRadius: 4,
                                                 cursor: 'pointer',
+                                                borderColor: paymentMethod === 'upi' ? 'primary.main' : 'divider',
+                                                bgcolor: paymentMethod === 'upi' ? 'primary.light' : 'transparent',
+                                            }}
+                                            onClick={() => setPaymentMethod('upi')}
+                                        >
+                                            <FormControlLabel
+                                                value="upi"
+                                                control={<Radio />}
+                                                label={
+                                                    <Box sx={{ ml: 1 }}>
+                                                        <Typography variant="h6" sx={{ fontWeight: 800 }}>UPI Payment (QR Code)</Typography>
+                                                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>Scan and pay instantly from any UPI app</Typography>
+                                                    </Box>
+                                                }
+                                                sx={{ m: 0 }}
+                                            />
+                                        </Paper>
+                                    </Grid>
+                                    <Grid size={{ xs: 12 }}>
+                                        <Paper
+                                            variant="outlined"
+                                            sx={{
+                                                p: 3,
+                                                borderRadius: 4,
+                                                cursor: 'pointer',
                                                 borderColor: paymentMethod === 'cod' ? 'primary.main' : 'divider',
                                                 bgcolor: paymentMethod === 'cod' ? 'primary.light' : 'transparent',
                                             }}
@@ -267,7 +333,9 @@ export default function CheckoutPage() {
                         </Paper>
                         <Paper variant="outlined" sx={{ p: 4, borderRadius: 4, bgcolor: '#f8fafc' }}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', mb: 1 }}>Payment Method</Typography>
-                            <Typography variant="body1" sx={{ fontWeight: 700 }}>{paymentMethod === 'stripe' ? 'Stripe Secure Payment' : 'Cash on Delivery'}</Typography>
+                            <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                                {paymentMethod === 'stripe' ? 'Stripe Secure Payment' : paymentMethod === 'upi' ? 'UPI Payment (QR Scan)' : 'Cash on Delivery'}
+                            </Typography>
                             <Button size="small" sx={{ mt: 1 }} onClick={() => setActiveStep(1)}>Change Method</Button>
                         </Paper>
                     </Box>
@@ -303,7 +371,7 @@ export default function CheckoutPage() {
 
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 8 }}>
                             <Button
-                                disabled={activeStep === 0}
+                                disabled={activeStep === 0 || !!clientSecret || showUpiQR}
                                 onClick={handleBack}
                                 startIcon={<BackIcon />}
                                 sx={{ ml: 1, fontWeight: 800 }}
@@ -312,8 +380,10 @@ export default function CheckoutPage() {
                             </Button>
                             <Box>
                                 {activeStep === steps.length - 1 ? (
-                                    paymentMethod === 'stripe' ? (
-                                        <StripePayment amount={calculateTotal()} />
+                                    clientSecret ? (
+                                        <StripePayment clientSecret={clientSecret} />
+                                    ) : showUpiQR && upiDetails ? (
+                                        <UpiQrPayment amount={upiDetails.amount} groupId={upiDetails.groupId} />
                                     ) : (
                                         <Button
                                             variant="contained"
@@ -326,7 +396,7 @@ export default function CheckoutPage() {
                                                 boxShadow: '0 8px 24px rgba(12, 131, 31, 0.2)'
                                             }}
                                         >
-                                            {placingOrder ? <CircularProgress size={24} color="inherit" /> : 'Confirm Order'}
+                                            {placingOrder ? <CircularProgress size={24} color="inherit" /> : (paymentMethod === 'stripe' || paymentMethod === 'upi' ? 'Proceed to Payment' : 'Confirm Order')}
                                         </Button>
                                     )
                                 ) : (

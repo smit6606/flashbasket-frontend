@@ -58,8 +58,8 @@ export default function AdminDashboard() {
   const statCards = [
     { label: 'Total Users', value: stats?.totalUsers || 0, icon: <UsersIcon />, color: '#2196f3', bgcolor: alpha('#2196f3', 0.1) },
     { label: 'Total Sellers', value: stats?.totalSellers || 0, icon: <SellersIcon />, color: '#ff9800', bgcolor: alpha('#ff9800', 0.1) },
-    { label: 'Total Orders', value: stats?.orders?.totalOrders || 0, icon: <OrdersIcon />, color: '#9c27b0', bgcolor: alpha('#9c27b0', 0.1) },
-    { label: 'Gross Sales', value: `₹${(stats?.orders?.totalSales || 0).toLocaleString()}`, icon: <SalesIcon />, color: '#0C831F', bgcolor: alpha('#0C831F', 0.1) },
+    { label: 'Total Orders', value: stats?.revenue?.totalOrders || 0, icon: <OrdersIcon />, color: '#9c27b0', bgcolor: alpha('#9c27b0', 0.1) },
+    { label: 'Gross Sales', value: `₹${(stats?.revenue?.totalSales || 0).toLocaleString()}`, icon: <SalesIcon />, color: '#0C831F', bgcolor: alpha('#0C831F', 0.1) },
   ];
 
   if (loading) return (
@@ -110,7 +110,7 @@ export default function AdminDashboard() {
         <Grid container alignItems="center" spacing={4}>
           <Grid size={{ xs: 12, md: 8 }}>
             <Typography variant="caption" sx={{ fontWeight: 900, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>Platform Revenue (10% Commission)</Typography>
-            <Typography variant="h2" sx={{ fontWeight: 900, mt: 1, mb: 1 }}>₹{(stats?.orders?.totalCommission || 0).toLocaleString()}</Typography>
+            <Typography variant="h2" sx={{ fontWeight: 900, mt: 1, mb: 1 }}>₹{(stats?.revenue?.totalCommission || 0).toLocaleString()}</Typography>
             <Typography variant="body1" sx={{ fontWeight: 700, color: 'primary.main' }}>Platform Health: Stable & Scaling</Typography>
           </Grid>
           <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: 'right' }}>

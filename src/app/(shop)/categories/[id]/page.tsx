@@ -28,6 +28,7 @@ interface Product {
     id: number;
     productName: string;
     price: string;
+    stock: number;
     images: string[];
     unit: string;
     Seller: {

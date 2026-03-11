@@ -15,7 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
 
     return (
-        <Box sx={{ display: 'flex', bgcolor: '#f8fafc', minHeight: '100vh' }}>
+        <Box sx={{ display: 'flex', bgcolor: '#e2e8f0', minHeight: '100vh', overflow: 'hidden' }}>
             <MuiTopBar onMenuClick={handleDrawerToggle} />
 
             <MuiSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
@@ -24,15 +24,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 component="main"
                 sx={{
                     flexGrow: 1,
-                    p: { xs: 3, md: 6 },
+                    p: { xs: 2, md: 3 },
                     width: { lg: `calc(100% - ${DRAWER_WIDTH}px)` },
                     minHeight: '100vh',
+                    display: 'flex',
+                    flexDirection: 'column',
                 }}
             >
-                <Toolbar sx={{ height: 80 }} /> {/* Spacer for TopBar */}
-                <Container maxWidth="xl" disableGutters sx={{ py: 2 }}>
-                    {children}
-                </Container>
+                <Toolbar sx={{ height: 80, minHeight: '80px !important' }} /> {/* Spacer for TopBar */}
+                <Box
+                    sx={{
+                        flexGrow: 1,
+                        bgcolor: 'white',
+                        borderRadius: { xs: 4, md: 6 },
+                        boxShadow: '0 10px 40px rgba(0,0,0,0.04)',
+                        overflow: 'hidden',
+                        p: { xs: 2, md: 4 },
+                        border: '1px solid rgba(255,255,255,0.8)',
+                    }}
+                >
+                    <Container maxWidth="xl" disableGutters>
+                        {children}
+                    </Container>
+                </Box>
             </Box>
         </Box>
     );

@@ -8,20 +8,7 @@ import CheckoutForm from './CheckoutForm';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
-export default function StripePayment({ amount }: { amount: number }) {
-    const [clientSecret, setClientSecret] = useState("");
-
-    useEffect(() => {
-        const fetchIntent = async () => {
-            try {
-                const response = await api.post('/payment/create-intent', { amount });
-                setClientSecret(response.data.clientSecret);
-            } catch (err) {
-                console.error("Failed to create payment intent", err);
-            }
-        };
-        fetchIntent();
-    }, [amount]);
+export default function StripePayment({ clientSecret }: { clientSecret: string }) {
 
     const appearance = {
         theme: 'stripe' as const,

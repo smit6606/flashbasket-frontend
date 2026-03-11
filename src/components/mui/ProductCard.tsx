@@ -29,6 +29,7 @@ interface ProductCardProps {
         id: number;
         productName: string;
         price: string;
+        stock: number;
         images: string[];
         unit?: string;
         sellerId?: number;
@@ -177,44 +178,69 @@ export default function ProductCard({ product }: ProductCardProps) {
                     <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>(24)</Typography>
                 </Stack>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 'auto' }}>
-                    <Box>
-                        <Typography variant="h5" sx={{ fontWeight: 900, color: 'text.primary', display: 'flex', alignItems: 'baseline' }}>
-                            ₹{product.price}
-                            <Typography variant="caption" sx={{ ml: 0.5, color: 'text.secondary', fontWeight: 700 }}>
-                                {product.unit ? `/ ${product.unit}` : ''}
+                <Box sx={{ mt: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Box>
+                            <Typography variant="h6" sx={{ fontWeight: 900, color: 'text.primary', display: 'flex', alignItems: 'baseline' }}>
+                                ₹{product.price}
+                                <Typography variant="caption" sx={{ ml: 0.5, color: 'text.secondary', fontWeight: 700 }}>
+                                    {product.unit ? `/ ${product.unit}` : ''}
+                                </Typography>
                             </Typography>
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: 'text.secondary', textDecoration: 'line-through', opacity: 0.6, fontWeight: 700 }}>
-                            ₹{Number(product.price) + 40}
-                        </Typography>
+                            <Typography variant="caption" sx={{ color: 'text.secondary', textDecoration: 'line-through', opacity: 0.6, fontWeight: 700 }}>
+                                ₹{Number(product.price) + 40}
+                            </Typography>
+                        </Box>
                     </Box>
 
-                    <Button
-                        className="add-button"
-                        variant="contained"
-                        onClick={handleAddToCart}
-                        size="medium"
-                        sx={{
-                            minWidth: 44,
-                            width: 44,
-                            height: 44,
-                            p: 0,
-                            borderRadius: 3,
-                            bgcolor: 'primary.main',
-                            color: 'white',
-                            boxShadow: '0 4px 12px rgba(12, 131, 31, 0.2)',
-                            '&:hover': {
-                                bgcolor: 'primary.dark',
-                                transform: 'scale(1.05)',
-                            },
-                            opacity: { xs: 1, md: 0.8 },
-                            transform: { xs: 'none', md: 'scale(0.95)' },
-                            transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                        }}
-                    >
-                        <AddIcon />
-                    </Button>
+                    <Stack direction="row" spacing={1} sx={{ width: '100%' }}>
+                        <Button
+                            className="buy-now-button"
+                            variant="contained"
+                            fullWidth
+                            disabled={product.stock <= 0}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (!user) router.push('/login');
+                                else {
+                                    router.push(`/checkout?productId=${product.id}&quickBuy=true`);
+                                }
+                            }}
+                            sx={{
+                                height: 40,
+                                borderRadius: 2,
+                                bgcolor: product.stock <= 0 ? '#e2e8f0' : '#0f172a',
+                                color: product.stock <= 0 ? 'text.disabled' : 'white',
+                                fontWeight: 800,
+                                fontSize: '0.8rem',
+                                '&:hover': { bgcolor: product.stock <= 0 ? '#e2e8f0' : '#1e293b' }
+                            }}
+                        >
+                            {product.stock <= 0 ? 'Out of Stock' : 'Buy Now'}
+                        </Button>
+                        <Button
+                            className="add-button"
+                            variant="contained"
+                            disabled={product.stock <= 0}
+                            onClick={handleAddToCart}
+                            sx={{
+                                minWidth: 40,
+                                width: 40,
+                                height: 40,
+                                p: 0,
+                                borderRadius: 2,
+                                bgcolor: 'primary.main',
+                                color: 'white',
+                                boxShadow: '0 4px 12px rgba(12, 131, 31, 0.2)',
+                                '&:hover': {
+                                    bgcolor: 'primary.dark',
+                                    transform: 'scale(1.05)',
+                                },
+                            }}
+                        >
+                            <AddIcon />
+                        </Button>
+                    </Stack>
                 </Box>
             </CardContent>
         </Card>

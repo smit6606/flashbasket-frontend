@@ -14,6 +14,12 @@ import {
   IconButton,
   Card,
   Chip,
+  Avatar,
+  Rating,
+  Divider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 import {
   ChevronRight as RightIcon,
@@ -22,6 +28,9 @@ import {
   Storefront as StoreIcon,
   ShoppingBag as LogoIcon,
   FlashOn as FlashIcon,
+  CheckCircleOutline as CheckIcon,
+  ExpandMore as ExpandMoreIcon,
+  MyLocation as LocationIcon,
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import ProductCard from '@/components/mui/ProductCard';
@@ -31,6 +40,7 @@ interface Product {
   id: number;
   productName: string;
   price: string;
+  stock: number;
   images: string[];
   unit: string;
   Seller: {
@@ -42,6 +52,7 @@ interface Product {
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<number | false>(false);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -70,8 +81,9 @@ export default function HomePage() {
   ];
 
   return (
-    <Box sx={{ py: 1 }}>
-      {/* Hero / Banner Section */}
+    <Container maxWidth="xl" sx={{ pt: { xs: 2, md: 5 }, pb: 8 }}>
+      <Box sx={{ py: 1 }}>
+        {/* Hero / Banner Section */}
       <Paper
         elevation={0}
         sx={{
@@ -166,6 +178,43 @@ export default function HomePage() {
         </Container>
       </Paper>
 
+      {/* Near You Discovery Section */}
+      <Box sx={{ mb: 12 }}>
+        <Paper elevation={0} sx={{ 
+          p: { xs: 4, md: 6 }, 
+          borderRadius: 8, 
+          bgcolor: alpha('#E8F5E9', 0.5), 
+          border: '1px solid #C8E6C9',
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          alignItems: 'center',
+          gap: 4,
+          justifyContent: 'space-between'
+        }}>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 900, color: '#0C831F', mb: 1 }}>Hungry for <span style={{ color: '#0f172a' }}>Local Freshness?</span></Typography>
+            <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 700 }}>Enable location to discover verified neighborhood stores delivering in minutes.</Typography>
+          </Box>
+          <Button 
+            variant="contained" 
+            component={Link}
+            href="/sellers"
+            startIcon={<LocationIcon />}
+            sx={{ 
+              borderRadius: 4, 
+              px: 4, 
+              py: 1.5, 
+              fontWeight: 900,
+              bgcolor: '#0C831F',
+              boxShadow: '0 10px 20px rgba(12, 131, 31, 0.2)',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Detect My Location
+          </Button>
+        </Paper>
+      </Box>
+
       {/* Categories Grid */}
       <Box sx={{ mb: 12 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-end" sx={{ mb: 6 }}>
@@ -173,7 +222,7 @@ export default function HomePage() {
             <Typography variant="h3" sx={{ fontWeight: 900, letterSpacing: '-0.02em' }}>Quick <span style={{ color: '#0C831F' }}>Categories</span></Typography>
             <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 700, mt: 1 }}>Explore our wide range of fresh collections</Typography>
           </Box>
-          <Button endIcon={<RightIcon />} sx={{ fontWeight: 900, color: 'primary.main' }}>View All</Button>
+          <Button component={Link} href="/categories" endIcon={<RightIcon />} sx={{ fontWeight: 900, color: 'primary.main' }}>View All</Button>
         </Stack>
 
         <Grid container spacing={4}>
@@ -248,39 +297,122 @@ export default function HomePage() {
         </Grid>
       </Box>
 
-      {/* Trust & Support Section */}
-      <Paper elevation={0} sx={{
-        p: { xs: 4, md: 8 },
-        borderRadius: 10,
-        bgcolor: '#f8fafc',
-        border: '1px solid #f1f5f9',
-        mb: 6
-      }}>
-        <Grid container spacing={6}>
+      {/* Customer Reviews Section */}
+      <Box sx={{ mb: 12 }}>
+        <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, letterSpacing: '-0.02em', textAlign: 'center' }}>
+          See What Our Customers <span style={{ color: '#0C831F' }}>Are Saying</span>
+        </Typography>
+        <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mb: 6, textAlign: 'center' }}>
+          Real feedback from verified shoppers
+        </Typography>
+        <Grid container spacing={4}>
           {[
-            { title: 'Superfast Delivery', desc: 'Get your items in 11 minutes at your doorstep.', icon: <TimeIcon sx={{ fontSize: 30 }} />, color: '#0C831F' },
-            { title: 'Neighborhood Shops', desc: 'Supporting your local vendors and merchants.', icon: <StoreIcon sx={{ fontSize: 30 }} />, color: '#2196f3' },
-            { title: 'Best Prices', desc: 'We ensure you get the best deals and offers.', icon: <TagIcon sx={{ fontSize: 30 }} />, color: '#ff9800' },
-            { title: 'Quality Check', desc: 'Every item is handpicked and quality verified.', icon: <LogoIcon sx={{ fontSize: 30 }} />, color: '#9c27b0' },
-          ].map((feature, i) => (
-            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
-              <Stack spacing={2} alignItems="flex-start">
-                <Box sx={{
-                  p: 2,
-                  borderRadius: 4,
-                  bgcolor: alpha(feature.color, 0.1),
-                  color: feature.color,
-                  display: 'flex'
-                }}>
-                  {feature.icon}
-                </Box>
-                <Typography variant="h6" sx={{ fontWeight: 900 }}>{feature.title}</Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, lineHeight: 1.6 }}>{feature.desc}</Typography>
-              </Stack>
+            { name: "Rahul Sharma", text: "Unbelievably fast delivery. Tomatoes were fresh as promised. The app is so smooth. Will definitely be ordering my groceries from here every day!", rating: 5, avatar: "https://randomuser.me/api/portraits/men/32.jpg" },
+            { name: "Priya Desai", text: "Great variety of local shops. It feels like buying directly from the market. Love the 11 minutes delivery promise. Saves me so much time in the mornings.", rating: 5, avatar: "https://randomuser.me/api/portraits/women/44.jpg" },
+            { name: "Amit Singh", text: "The premium membership is an absolute steal! Free delivery pays for itself in less than a week. Highly recommended for people who order frequently.", rating: 5, avatar: "https://randomuser.me/api/portraits/men/45.jpg" }
+          ].map((review, i) => (
+            <Grid size={{ xs: 12, md: 4 }} key={i}>
+              <Paper elevation={0} sx={{ p: 4, borderRadius: 5, border: '1px solid #f1f5f9', boxShadow: '0 10px 30px rgba(0,0,0,0.02)', textAlign: 'center' }}>
+                <Avatar src={review.avatar} alt={review.name} sx={{ width: 72, height: 72, mx: 'auto', mb: 2, boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }} />
+                <Rating value={review.rating} readOnly sx={{ mb: 2, color: '#FFD700' }} />
+                <Typography variant="body1" sx={{ fontWeight: 700, color: 'slate.800', fontStyle: 'italic', mb: 2 }}>
+                  "{review.text}"
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase' }}>
+                  {review.name}
+                </Typography>
+              </Paper>
             </Grid>
           ))}
         </Grid>
-      </Paper>
+      </Box>
+
+      {/* Premium Membership Section */}
+      <Box sx={{ mb: 12 }}>
+        <Paper elevation={0} sx={{ p: { xs: 4, md: 8 }, borderRadius: 8, bgcolor: '#0f172a', color: 'white', overflow: 'hidden', position: 'relative' }}>
+          <Box sx={{ position: 'absolute', top: '-20%', right: '-10%', width: 300, height: 300, bgcolor: 'primary.main', filter: 'blur(100px)', opacity: 0.3, borderRadius: '50%' }} />
+          <Grid container spacing={6} alignItems="center">
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Typography variant="h3" sx={{ fontWeight: 900, mb: 2 }}>
+                The Affordable <span style={{ color: '#FFD700' }}>Unfair Advantage</span>
+              </Typography>
+              <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, mb: 4 }}>
+                Join FlashPremium and never pay delivery fees again. Plus, get priority support and exclusive discounts.
+              </Typography>
+              <Stack spacing={2} sx={{ mb: 4 }}>
+                {['Unlimited Free Delivery', 'Faster Delivery Priority', 'Exclusive Member Discounts', '24/7 Priority Support'].map((benefit, i) => (
+                  <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <CheckIcon sx={{ color: '#10b981' }} />
+                    <Typography variant="body1" sx={{ fontWeight: 700 }}>{benefit}</Typography>
+                  </Box>
+                ))}
+              </Stack>
+              <Button variant="contained" sx={{ bgcolor: '#FFD700', color: '#0f172a', fontWeight: 900, px: 5, py: 1.5, borderRadius: 3, '&:hover': { bgcolor: '#facc15' } }}>
+                Join FlashPremium - ₹299/mo
+              </Button>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper elevation={0} sx={{ p: 4, borderRadius: 5, bgcolor: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <Typography variant="h5" sx={{ fontWeight: 900, mb: 3, textAlign: 'center' }}>Plan Comparison</Typography>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 4 }}>
+                    <Typography variant="subtitle2" sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 800 }}>Feature</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}>
+                    <Typography variant="subtitle2" sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 800 }}>Free</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}>
+                    <Typography variant="subtitle2" sx={{ color: '#FFD700', fontWeight: 900 }}>Premium</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 12 }}><Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} /></Grid>
+                  
+                  {/* Rows */}
+                  <Grid size={{ xs: 4 }}><Typography variant="body2" sx={{ fontWeight: 700, color: 'white' }}>Delivery Fee</Typography></Grid>
+                  <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}><Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>₹25</Typography></Grid>
+                  <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}><Typography variant="body2" sx={{ fontWeight: 900, color: '#10b981' }}>FREE</Typography></Grid>
+
+                  <Grid size={{ xs: 4 }}><Typography variant="body2" sx={{ fontWeight: 700, color: 'white' }}>Priority Support</Typography></Grid>
+                  <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}><Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>No</Typography></Grid>
+                  <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}><Typography variant="body2" sx={{ fontWeight: 900, color: '#10b981' }}>Yes</Typography></Grid>
+                </Grid>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Paper>
+      </Box>
+
+      {/* FAQ Section */}
+      <Box sx={{ mb: 12 }}>
+        <Typography variant="h3" sx={{ fontWeight: 900, mb: 6, textAlign: 'center', letterSpacing: '-0.02em' }}>
+          Frequently Asked <span style={{ color: '#0C831F' }}>Questions</span>
+        </Typography>
+        <Box sx={{ width: '100%' }}>
+          {[
+            { q: "How long does delivery take?", a: "We guarantee delivery within 11 minutes for our primary zones. Deliveries outside these zones may take up to 25 minutes depending on distance and traffic." },
+            { q: "How can I track my order?", a: "Once your order is confirmed, you will see a live tracking screen on your app and receive SMS updates at each step." },
+            { q: "Can I cancel my order?", a: "You can cancel your order within 60 seconds of placing it. Once it enters the 'Preparing' phase, cancellation is not possible." },
+            { q: "What payment methods are supported?", a: "We support Credit/Debit Cards, UPI, NetBanking, and Cash on Delivery (COD)." },
+          ].map((faq, i) => (
+            <Accordion 
+              key={i} 
+              expanded={expanded === i}
+              onChange={(_, isExpanded) => setExpanded(isExpanded ? i : false)}
+              elevation={0} 
+              sx={{ mb: 2, borderRadius: 3, border: '1px solid #f1f5f9', '&:before': { display: 'none' } }}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ fontSize: '1.75rem' }}/>} sx={{ p: { xs: 3, md: 4 } }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, fontSize: { xs: '1.05rem', md: '1.2rem' } }}>{faq.q}</Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ px: { xs: 3, md: 4 }, pb: { xs: 3, md: 4 }, pt: 0 }}>
+                <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: { xs: '0.95rem', md: '1.05rem' }, lineHeight: 1.6 }}>{faq.a}</Typography>
+              </AccordionDetails>
+            </Accordion>
+          ))}
+        </Box>
+      </Box>
+
+
     </Box>
+    </Container>
   );
 }

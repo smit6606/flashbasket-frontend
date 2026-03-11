@@ -37,6 +37,7 @@ interface Product {
     id: number;
     productName: string;
     price: string;
+    stock: number;
     images: string[];
     unit: string;
 }
@@ -47,6 +48,8 @@ interface Seller {
     shop_description: string;
     shop_image: string;
     shop_address: string;
+    latitude?: number;
+    longitude?: number;
 }
 
 export default function SellerProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -138,6 +141,16 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
                         alt={seller.shop_name}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }}
                     />
+                ) : seller.latitude && seller.longitude ? (
+                    <iframe
+                        width="100%"
+                        height="200%"
+                        style={{ border: 0, marginTop: '-30%', pointerEvents: 'none', filter: 'contrast(1.1) saturate(1.2)' }}
+                        loading="lazy"
+                        allowFullScreen
+                        src={`https://maps.google.com/maps?q=${seller.latitude},${seller.longitude}&z=16&output=embed`}
+                        title={seller.shop_name}
+                    ></iframe>
                 ) : (
                     <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: alpha('#0C831F', 0.1) }}>
                         <StoreIcon sx={{ fontSize: 100, color: 'primary.main', opacity: 0.2 }} />
@@ -257,8 +270,22 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
                                             <img
                                                 src={product.images && product.images[0] ? product.images[0] : 'https://placehold.co/400x400?text=FlashBasket'}
                                                 alt={product.productName}
-                                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                                style={{ 
+                                                    width: '100%', 
+                                                    height: '100%', 
+                                                    objectFit: 'contain',
+                                                    filter: product.stock <= 0 ? 'grayscale(1)' : 'none',
+                                                    opacity: product.stock <= 0 ? 0.5 : 1
+                                                }}
                                             />
+                                            {product.stock <= 0 && (
+                                                <Chip 
+                                                    label="OUT OF STOCK" 
+                                                    size="small"
+                                                    color="error"
+                                                    sx={{ position: 'absolute', fontWeight: 900, fontSize: '0.6rem' }}
+                                                />
+                                            )}
                                         </Box>
 
                                         <Box sx={{ p: 2 }}>
@@ -270,15 +297,16 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
                                             </Typography>
 
                                             <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                                <Typography variant="h5" sx={{ fontWeight: 900 }}>
+                                                <Typography variant="h5" sx={{ fontWeight: 900, opacity: product.stock <= 0 ? 0.3 : 1 }}>
                                                     ₹{product.price}
                                                 </Typography>
                                                 <IconButton
                                                     className="add-btn"
                                                     onClick={(e) => addToCart(e, product)}
+                                                    disabled={product.stock <= 0}
                                                     sx={{
-                                                        bgcolor: '#f1f5f9',
-                                                        color: 'primary.main',
+                                                        bgcolor: product.stock <= 0 ? '#f1f5f9' : '#f1f5f9',
+                                                        color: product.stock <= 0 ? 'text.disabled' : 'primary.main',
                                                         borderRadius: 4,
                                                         width: 44,
                                                         height: 44,

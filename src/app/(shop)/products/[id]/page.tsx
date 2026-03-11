@@ -248,7 +248,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     bgcolor: 'white',
                                     borderRadius: 4,
                                     p: 0.5,
-                                    border: '1.5px solid #0C831F'
+                                    border: '1.5px solid #0C831F',
+                                    opacity: product.stock <= 0 ? 0.5 : 1,
+                                    pointerEvents: product.stock <= 0 ? 'none' : 'auto'
                                 }}>
                                     <IconButton size="small" onClick={() => setQuantity(Math.max(1, quantity - 1))} sx={{ color: 'primary.main' }}><RemoveIcon /></IconButton>
                                     <Typography variant="h6" sx={{ px: 4, fontWeight: 900 }}>{quantity}</Typography>
@@ -258,18 +260,21 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     fullWidth
                                     variant="contained"
                                     size="large"
-                                    startIcon={<CartIcon />}
+                                    disabled={product.stock <= 0}
+                                    startIcon={product.stock > 0 ? <CartIcon /> : null}
                                     onClick={addToCart}
                                     sx={{
                                         borderRadius: 4,
                                         py: 2,
                                         fontWeight: 900,
                                         fontSize: '1.1rem',
-                                        boxShadow: '0 12px 24px rgba(12, 131, 31, 0.25)',
-                                        '&:hover': { boxShadow: '0 8px 16px rgba(12, 131, 31, 0.2)' }
+                                        bgcolor: product.stock <= 0 ? '#e2e8f0' : 'primary.main',
+                                        color: product.stock <= 0 ? 'text.disabled' : 'white',
+                                        boxShadow: product.stock > 0 ? '0 12px 24px rgba(12, 131, 31, 0.25)' : 'none',
+                                        '&:hover': { bgcolor: product.stock <= 0 ? '#e2e8f0' : 'primary.dark' }
                                     }}
                                 >
-                                    Add to Cart
+                                    {product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
                                 </Button>
                             </Box>
 

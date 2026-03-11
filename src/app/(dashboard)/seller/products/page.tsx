@@ -27,6 +27,8 @@ import {
     DeleteOutline as DeleteIcon,
     MoreVert as MoreIcon,
     Inventory2Outlined as ProductIcon,
+    Visibility as VisibleIcon,
+    VisibilityOff as HiddenIcon,
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
@@ -65,14 +67,25 @@ export default function SellerProductsPage() {
         fetchProducts();
     }, []);
 
+    const toggleStatus = async (id: number, currentStatus: string) => {
+        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+        try {
+            await api.put(`/seller/product/${id}`, { status: newStatus });
+            toast.success(`Product is now ${newStatus}`);
+            fetchProducts();
+        } catch (err: any) {
+            toast.error('Failed to update status');
+        }
+    };
+
     const deleteProduct = async (id: number) => {
         if (!confirm('Are you sure you want to delete this product?')) return;
         try {
-            await api.delete(`/products/${id}`);
+            await api.delete(`/seller/product/${id}`);
             toast.success('Product removed successfully');
             fetchProducts();
-        } catch (err) {
-            toast.error('Failed to delete product');
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Failed to delete product');
         }
     };
 
@@ -83,17 +96,39 @@ export default function SellerProductsPage() {
             flex: 1,
             minWidth: 250,
             renderCell: (params: GridRenderCellParams) => (
-                <Stack direction="row" spacing={2} alignItems="center" sx={{ height: '100%' }}>
+                <Stack direction="row" spacing={2} alignItems="center" sx={{ height: '100%', py: 1 }}>
                     <Avatar
                         variant="rounded"
                         src={params.row.images?.[0] || ''}
-                        sx={{ width: 45, height: 45, bgcolor: '#f1f5f9', p: 0.5 }}
+                        sx={{ 
+                            width: 52, 
+                            height: 52, 
+                            bgcolor: '#f8fafc', 
+                            p: 0.5,
+                            border: '1px solid #f1f5f9',
+                            '& img': { objectFit: 'contain' }
+                        }}
                     >
                         <ProductIcon sx={{ color: 'text.secondary' }} />
                     </Avatar>
-                    <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 800 }}>{params.row.productName}</Typography>
-                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>{params.row.unit}</Typography>
+                    <Box sx={{ minWidth: 0 }}>
+                        <Typography 
+                            variant="subtitle1" 
+                            sx={{ 
+                                fontWeight: 900, 
+                                color: params.row.status === 'inactive' ? 'text.disabled' : 'text.primary',
+                                textTransform: 'capitalize',
+                                lineClamp: 1,
+                                display: '-webkit-box',
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden'
+                            }}
+                        >
+                            {params.row.productName}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            {params.row.unit}
+                        </Typography>
                     </Box>
                 </Stack>
             ),
@@ -152,18 +187,29 @@ export default function SellerProductsPage() {
         },
         {
             field: 'actions',
-            headerName: '',
-            width: 120,
+            headerName: 'Actions',
+            width: 150,
             sortable: false,
+            headerAlign: 'right',
+            align: 'right',
             renderCell: (params: GridRenderCellParams) => (
-                <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center" sx={{ height: '100%', width: '100%' }}>
-                    <Tooltip title="Edit">
-                        <IconButton size="small" onClick={() => router.push(`/seller/products/edit/${params.row.id}`)}>
+                <Stack direction="row" spacing={0.5} justifyContent="flex-end" alignItems="center" sx={{ height: '100%', width: '100%' }}>
+                    <Tooltip title={params.row.status === 'active' ? "Hide from Users" : "Show to Users"}>
+                        <IconButton 
+                            size="small" 
+                            onClick={() => toggleStatus(params.row.id, params.row.status)}
+                            sx={{ color: params.row.status === 'active' ? 'primary.main' : 'text.disabled' }}
+                        >
+                            {params.row.status === 'active' ? <VisibleIcon fontSize="small" /> : <HiddenIcon fontSize="small" />}
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Edit Product">
+                        <IconButton size="small" onClick={() => router.push(`/seller/products/edit/${params.row.id}`)} sx={{ color: 'info.main' }}>
                             <EditIcon fontSize="small" />
                         </IconButton>
                     </Tooltip>
-                    <Tooltip title="Delete">
-                        <IconButton size="small" color="error" onClick={() => deleteProduct(params.row.id)}>
+                    <Tooltip title="Delete Product">
+                        <IconButton size="small" onClick={() => deleteProduct(params.row.id)} sx={{ color: 'error.main' }}>
                             <DeleteIcon fontSize="small" />
                         </IconButton>
                     </Tooltip>

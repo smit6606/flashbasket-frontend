@@ -14,6 +14,7 @@ import {
   CircularProgress,
   MenuItem,
   Stack,
+  Container,
 } from '@mui/material';
 import {
   Visibility,
@@ -24,9 +25,21 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role === 'admin') router.replace('/admin');
+      else if (user.role === 'seller') router.replace('/seller');
+      else if (user.role === 'delivery') router.replace('/delivery');
+      else router.replace('/');
+    }
+  }, [user, authLoading, router]);
+
   const [formData, setFormData] = useState({
     identifier: '',
     password: '',
@@ -57,10 +70,11 @@ export default function LoginPage() {
   };
 
   return (
-    <Grid container component="main" sx={{ height: '100vh', mt: -8, mb: -5, ml: -5, width: 'calc(100% + 40px)' }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 4, md: 8 }, display: 'flex', flexGrow: 1 }}>
+      <Grid container component="main" sx={{ width: '100%', minHeight: '75vh', borderRadius: 6, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.08)', border: '1px solid #f1f5f9' }}>
       {/* Left Side: Image/Branding */}
       <Grid
-        size={{ xs: 0, sm: 4, md: 7 }}
+        size={{ xs: 0, sm: 4, md: 6 }}
         sx={{
           display: { xs: 'none', sm: 'flex' },
           backgroundImage: 'url(/login_side_background_1773142649985.png)',
@@ -97,7 +111,7 @@ export default function LoginPage() {
       </Grid>
 
       {/* Right Side: Login Form */}
-      <Grid size={{ xs: 12, sm: 8, md: 5 }} component={Paper} elevation={0} square sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <Grid size={{ xs: 12, sm: 8, md: 6 }} component={Paper} elevation={0} square sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <Box
           sx={{
             my: 8,
@@ -239,6 +253,7 @@ export default function LoginPage() {
           </Typography>
         </Box>
       </Grid>
-    </Grid>
+      </Grid>
+    </Container>
   );
 }

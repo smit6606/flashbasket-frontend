@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { SocketProvider } from "@/context/SocketContext";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ThemeRegistry from "@/theme/ThemeRegistry";
@@ -20,7 +21,9 @@ export default function RootLayout({
       <body className="antialiased">
         <ThemeRegistry>
           <AuthProvider>
-            {children}
+            <SocketProvider>
+              {children}
+            </SocketProvider>
           </AuthProvider>
           <ToastContainer position="bottom-right" />
         </ThemeRegistry>

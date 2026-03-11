@@ -40,11 +40,12 @@ interface SidebarProps {
 export default function MuiSidebar({ mobileOpen, onClose }: SidebarProps) {
     const pathname = usePathname();
     const { user } = useAuth();
-    const role = user?.role || 'admin';
+    const role = user?.role || 'guest';
 
     const menuItems = {
         admin: [
             { name: 'Dashboard', path: '/admin', icon: <DashboardIcon /> },
+            { name: 'Manage Orders', path: '/admin/orders', icon: <OrdersIcon /> },
             { name: 'Manage Users', path: '/admin/users', icon: <PeopleIcon /> },
             { name: 'Store Requests', path: '/admin/sellers', icon: <StoreIcon /> },
             { name: 'Categories', path: '/admin/categories', icon: <CategoryIcon /> },

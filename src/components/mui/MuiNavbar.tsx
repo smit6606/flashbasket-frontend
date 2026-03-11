@@ -33,10 +33,11 @@ import { useRouter } from 'next/navigation';
 
 const Search = styled('div')(({ theme }) => ({
     position: 'relative',
-    borderRadius: 16,
-    backgroundColor: alpha(theme.palette.common.black, 0.04),
+    borderRadius: 24,
+    backgroundColor: '#f1f5f9',
     '&:hover': {
-        backgroundColor: alpha(theme.palette.common.black, 0.06),
+        backgroundColor: '#e2e8f0',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
     },
     marginRight: theme.spacing(2),
     marginLeft: 0,
@@ -46,7 +47,7 @@ const Search = styled('div')(({ theme }) => ({
         width: 'auto',
     },
     transition: theme.transitions.create(['background-color', 'box-shadow']),
-    border: '1px solid #f1f5f9',
+    border: '1px solid transparent',
 }));
 
 const SearchIconWrapper = styled('div')(({ theme }) => ({
@@ -55,12 +56,12 @@ const SearchIconWrapper = styled('div')(({ theme }) => ({
     position: 'absolute',
     pointerEvents: 'none',
     display: 'flex',
-    itemsCenter: 'center',
+    alignItems: 'center',
     justifyContent: 'center',
 }));
 
 const StyledInputBase = styled(InputBase)(({ theme }) => ({
-    color: 'inherit',
+    color: 'text.primary',
     width: '100%',
     '& .MuiInputBase-input': {
         padding: theme.spacing(1.5, 1.5, 1.5, 0),
@@ -68,10 +69,15 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
         transition: theme.transitions.create('width'),
         width: '100%',
         [theme.breakpoints.up('md')]: {
-            width: '50ch',
+            width: '60ch',
         },
         fontWeight: 600,
-        fontSize: '0.9rem',
+        fontSize: '0.95rem',
+        color: '#334155',
+        '&::placeholder': {
+            color: '#94a3b8',
+            opacity: 1,
+        }
     },
 }));
 
@@ -106,9 +112,19 @@ export default function MuiNavbar() {
 
     return (
         <HideOnScroll>
-            <AppBar position="sticky" sx={{ zIndex: 1201 }}>
+            <AppBar 
+                position="sticky" 
+                elevation={0}
+                sx={{ 
+                    zIndex: 1201, 
+                    bgcolor: 'rgba(255, 255, 255, 0.85)', 
+                    backdropFilter: 'blur(20px)',
+                    borderBottom: '1px solid rgba(0,0,0,0.05)',
+                    boxShadow: '0 4px 30px rgba(0,0,0,0.03)'
+                }}
+            >
                 <Container maxWidth="xl">
-                    <Toolbar disableGutters sx={{ minHeight: 80 }}>
+                    <Toolbar disableGutters sx={{ minHeight: { xs: 70, md: 80 } }}>
                         {/* Logo */}
                         <Typography
                             variant="h6"
@@ -143,30 +159,36 @@ export default function MuiNavbar() {
                         </Typography>
 
                         {/* Location Selector */}
-                        <Box sx={{ display: { xs: 'none', sm: 'flex' }, flexDirection: 'column', cursor: 'pointer', mr: 2 }}>
-                            <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', lineHeight: 1, fontSize: '0.65rem' }}>
-                                Delivery in 11 mins
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary' }}>
-                                    Surat, Gujarat
+                        {user && (
+                            <Box sx={{ display: { xs: 'none', sm: 'flex' }, flexDirection: 'column', cursor: 'pointer', mr: 2 }}>
+                                <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', lineHeight: 1, fontSize: '0.65rem' }}>
+                                    Delivery in 11 mins
                                 </Typography>
-                                <ArrowDownIcon sx={{ fontSize: 16 }} />
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary' }}>
+                                        Surat, Gujarat
+                                    </Typography>
+                                    <ArrowDownIcon sx={{ fontSize: 16 }} />
+                                </Box>
                             </Box>
-                        </Box>
+                        )}
 
                         {/* Search */}
-                        <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
-                            <Search>
-                                <SearchIconWrapper>
-                                    <SearchIcon sx={{ color: 'text.secondary' }} />
-                                </SearchIconWrapper>
-                                <StyledInputBase
-                                    placeholder="Search for 'groceries', 'electronics'..."
-                                    inputProps={{ 'aria-label': 'search' }}
-                                />
-                            </Search>
-                        </Box>
+                        {user ? (
+                            <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
+                                <Search>
+                                    <SearchIconWrapper>
+                                        <SearchIcon sx={{ color: 'text.secondary' }} />
+                                    </SearchIconWrapper>
+                                    <StyledInputBase
+                                        placeholder="Search for 'groceries', 'electronics'..."
+                                        inputProps={{ 'aria-label': 'search' }}
+                                    />
+                                </Search>
+                            </Box>
+                        ) : (
+                            <Box sx={{ flexGrow: 1 }} />
+                        )}
 
                         {/* Actions */}
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
