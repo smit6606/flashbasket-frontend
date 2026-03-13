@@ -11,6 +11,7 @@ import {
     Stack,
     Link as MuiLink,
     alpha,
+    useMediaQuery,
 } from '@mui/material';
 import {
     Facebook,
@@ -21,13 +22,15 @@ import {
 import Link from 'next/link';
 
 export default function MuiFooter() {
+    const isBelow375 = useMediaQuery('(max-width:375px)');
+
     return (
         <Box
             component="footer"
             sx={{
                 bgcolor: '#0f172a',
                 color: 'white',
-                pt: 10,
+                pt: 4,
                 pb: 6,
                 mt: 'auto'
             }}
@@ -73,7 +76,7 @@ export default function MuiFooter() {
 
                     {/* Quick Links Group */}
                     <Grid size={{ xs: 12, md: 5 }}>
-                        <Grid container spacing={2}>
+                        <Grid container spacing={4}>
                             <Grid size={{ xs: 6, sm: 4 }}>
                                 <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Company</Typography>
                                 <Stack spacing={1.5}>

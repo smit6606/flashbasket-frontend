@@ -29,12 +29,15 @@ import {
     Add as AddIcon,
     Remove as RemoveIcon,
     Storefront as StoreIcon,
+    Favorite as FavoriteFilledIcon,
     FavoriteBorder as WishlistIcon,
     Share as ShareIcon,
+    Star as StarIcon,
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { useFavourites } from '@/context/FavouriteContext';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import Link from 'next/link';
@@ -55,17 +58,75 @@ interface Product {
     Category: {
         name: string;
     };
+    avgRating?: string | number;
+    totalRatings?: number;
 }
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
-    const router = useRouter();
     const { user } = useAuth();
-    const { refreshCart } = useCart();
+    const { refreshCart, getItemFromCart, addToCart, updateQuantity } = useCart();
+    const { isFavourite, toggleFavourite } = useFavourites();
+    const router = useRouter();
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
-    const [addingToCart, setAddingToCart] = useState(false);
+    const [updating, setUpdating] = useState(false);
     const [quantity, setQuantity] = useState(1);
+    const [userRating, setUserRating] = useState<number | null>(null);
+    const [isEditingRating, setIsEditingRating] = useState(false);
+
+    const cartItem = getItemFromCart(product?.id || 0);
+
+    const fetchUserRating = async (productId: number) => {
+        if (!user) return;
+        try {
+            const response = await api.get(`/reviews/product/${productId}`);
+            const myReview = response.data.find((r: any) => r.userId === user.id);
+            if (myReview) {
+                setUserRating(myReview.rating);
+            }
+        } catch (err) {
+            console.error('Failed to fetch user rating', err);
+        }
+    };
+
+    const handleShare = () => {
+        if (!product) return;
+        const url = window.location.href;
+        if (navigator.share) {
+            navigator.share({ title: product.productName, url }).catch(() => {});
+        } else {
+            navigator.clipboard.writeText(url);
+            toast.success('Link copied to clipboard!');
+        }
+    };
+
+    const handleFavourite = () => {
+        if (!user) {
+            toast.info('Please login to add items to favourites');
+            return;
+        }
+        if (!product) return;
+        toggleFavourite(product.id);
+    };
+
+    const submitRating = async (newRating: number | null) => {
+        if (!user || !product || !newRating) return;
+        try {
+            await api.post('/reviews', {
+                productId: product.id,
+                rating: newRating,
+                comment: "Rated via listing"
+            });
+            // Instant feedback without toast
+            const response = await api.get(`/products/${id}`);
+            setProduct(response.data);
+            setUserRating(newRating);
+        } catch (err: any) {
+            console.error('Failed to submit rating', err);
+        }
+    };
+
     const [mainImage, setMainImage] = useState('');
 
     useEffect(() => {
@@ -77,6 +138,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 if (response.data.images && response.data.images.length > 0) {
                     setMainImage(response.data.images[0]);
                 }
+                fetchUserRating(Number(id));
             } catch (err) {
                 console.error('Failed to fetch product', err);
             } finally {
@@ -86,25 +148,29 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         fetchProduct();
     }, [id]);
 
-    const addToCart = async () => {
-        if (!user) {
-            router.push('/login');
-            return;
-        }
-        setAddingToCart(true);
+    const addToCartHandler = async () => {
+        if (!product) return;
+        setUpdating(true);
         try {
-            await api.post('/cart/add', {
-                productId: product?.id,
-                sellerId: product?.Seller?.id,
-                price: product?.price,
-                quantity: quantity
-            });
-            await refreshCart();
+            await addToCart(product, quantity);
             toast.success('Product Added');
         } catch (error: any) {
             toast.error(error.message || 'Failed to add to cart');
         } finally {
-            setAddingToCart(false);
+            setUpdating(false);
+        }
+    };
+
+    const handleUpdateQuantity = async (newQuantity: number) => {
+        if (!product) return;
+        setUpdating(true);
+        try {
+            await updateQuantity(product.id, newQuantity, cartItem?.id);
+            if (newQuantity <= 0) toast.info('Item Removed');
+        } catch (err: any) {
+            toast.error('Failed to update quantity');
+        } finally {
+            setUpdating(false);
         }
     };
 
@@ -137,12 +203,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>
-            <Breadcrumbs separator={<NextIcon fontSize="small" />} sx={{ mb: 4 }}>
-                <MuiLink component={Link} underline="hover" color="inherit" href="/" sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>Home</MuiLink>
-                <MuiLink component={Link} underline="hover" color="inherit" href={`/categories/${product.Category?.name}`} sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>{product.Category?.name}</MuiLink>
-                <Typography sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: 'text.secondary' }}>{product.productName}</Typography>
-            </Breadcrumbs>
-
             <Grid container spacing={8}>
                 {/* Left Gallery */}
                 <Grid size={{ xs: 12, md: 6.5 }}>
@@ -152,12 +212,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             overflow: 'hidden',
                             bgcolor: '#f8fafc',
                             border: '1px solid #f1f5f9',
-                            p: 6,
+                            p: { xs: 2, md: 6 },
                             mb: 3,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            minHeight: 500
+                            minHeight: { xs: 300, md: 500 }
                         }}>
                             <img
                                 src={mainImage || 'https://placehold.co/800x800?text=No+Image'}
@@ -205,14 +265,48 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 sx={{ fontWeight: 900, bgcolor: alpha('#0C831F', 0.1), color: '#0C831F', borderRadius: 2 }}
                             />
                             <Stack direction="row" spacing={1}>
-                                <IconButton size="small" sx={{ border: '1px solid #f1f5f9' }}><WishlistIcon fontSize="small" /></IconButton>
-                                <IconButton size="small" sx={{ border: '1px solid #f1f5f9' }}><ShareIcon fontSize="small" /></IconButton>
+                                <IconButton 
+                                    onClick={handleFavourite}
+                                    sx={{ 
+                                        border: '1px solid #f1f5f9',
+                                        color: product && isFavourite(product.id) ? 'error.main' : 'inherit'
+                                    }}
+                                >
+                                    {product && isFavourite(product.id) ? <FavoriteFilledIcon fontSize="small" /> : <WishlistIcon fontSize="small" />}
+                                </IconButton>
+                                <IconButton 
+                                    onClick={handleShare}
+                                    sx={{ border: '1px solid #f1f5f9' }}
+                                >
+                                    <ShareIcon fontSize="small" />
+                                </IconButton>
                             </Stack>
                         </Stack>
 
-                        <Typography variant="h2" sx={{ fontWeight: 900, mb: 1, letterSpacing: '-0.02em', color: '#1e293b' }}>
+                        <Typography variant="h2" sx={{ fontWeight: 900, mb: 1, letterSpacing: '-0.02em', color: '#1e293b', fontSize: { xs: '1.75rem', md: '3rem' } }}>
                             {product.productName}
                         </Typography>
+
+                        <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
+                            <Box sx={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                bgcolor: '#0C831F', 
+                                color: 'white', 
+                                px: 1, 
+                                py: 0.5, 
+                                borderRadius: 1.5,
+                                gap: 0.5
+                            }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>
+                                    {Number(product.avgRating || 0).toFixed(1)}
+                                </Typography>
+                                <StarIcon sx={{ fontSize: 14 }} />
+                            </Box>
+                            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 800 }}>
+                                {product.totalRatings || 0} Ratings
+                            </Typography>
+                        </Stack>
 
                         <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 700, mb: 3 }}>
                             {product.unit}
@@ -248,47 +342,109 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             </Typography>
                         </Box>
 
-                        <Stack spacing={3}>
-                            <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                                <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    bgcolor: 'white',
-                                    borderRadius: '16px',
-                                    p: 0.5,
-                                    border: '1.5px solid #0C831F',
-                                    opacity: product.stock <= 0 ? 0.5 : 1,
-                                    pointerEvents: product.stock <= 0 ? 'none' : 'auto'
-                                }}>
-                                    <IconButton size="small" onClick={() => setQuantity(Math.max(1, quantity - 1))} sx={{ color: 'primary.main' }}><RemoveIcon /></IconButton>
-                                    <Typography variant="h6" sx={{ px: 4, fontWeight: 900 }}>{quantity}</Typography>
-                                    <IconButton size="small" onClick={() => setQuantity(quantity + 1)} sx={{ color: 'primary.main' }}><AddIcon /></IconButton>
-                                </Box>
-                                <Button
-                                    fullWidth
-                                    variant="contained"
-                                    size="large"
-                                    disabled={product.stock <= 0 || addingToCart}
-                                    startIcon={product.stock > 0 && !addingToCart ? <CartIcon /> : null}
-                                    onClick={addToCart}
-                                    sx={{
-                                        borderRadius: '16px',
-                                        py: 2,
-                                        fontWeight: 900,
-                                        fontSize: '1.1rem',
-                                        bgcolor: (product.stock <= 0 || addingToCart) ? '#e2e8f0' : 'primary.main',
-                                        color: (product.stock <= 0 || addingToCart) ? 'text.disabled' : 'white',
-                                        boxShadow: product.stock > 0 && !addingToCart ? '0 12px 24px rgba(12, 131, 31, 0.25)' : 'none',
-                                        '&:hover': { bgcolor: (product.stock <= 0 || addingToCart) ? '#e2e8f0' : 'primary.dark' }
+                        <Box sx={{ mb: 6, p: 3, bgcolor: '#f8fafc', borderRadius: '24px', border: '1px solid #f1f5f9' }}>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>
+                                    {isEditingRating ? 'Update your rating' : 'Your Rating'}
+                                </Typography>
+                                {userRating && !isEditingRating && (
+                                    <Button 
+                                        size="small" 
+                                        onClick={() => setIsEditingRating(true)}
+                                        sx={{ fontWeight: 800, textTransform: 'none' }}
+                                    >
+                                        Edit Rating
+                                    </Button>
+                                )}
+                            </Stack>
+                            
+                            <Stack direction="row" spacing={2} alignItems="center">
+                                <Rating 
+                                    value={userRating} 
+                                    readOnly={!!userRating && !isEditingRating}
+                                    onChange={(_, val) => {
+                                        setUserRating(val);
+                                        setIsEditingRating(true); // Keep editing until submit
                                     }}
+                                />
+                                <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary' }}>
+                                    {userRating ? (isEditingRating ? 'Submit your change' : 'You already rated this') : 'Share your experience!'}
+                                </Typography>
+                            </Stack>
+
+                            {isEditingRating && userRating && (
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    onClick={() => {
+                                        submitRating(userRating);
+                                        setIsEditingRating(false);
+                                    }}
+                                    sx={{ mt: 2, borderRadius: 2, fontWeight: 900 }}
                                 >
-                                    {addingToCart ? (
-                                        <Stack direction="row" spacing={1} alignItems="center">
-                                            <CircularProgress size={20} color="inherit" />
-                                            <Typography variant="body1" sx={{ fontWeight: 900 }}>Adding...</Typography>
-                                        </Stack>
-                                    ) : (product.stock <= 0 ? 'Out of Stock' : 'Add to Cart')}
+                                    Submit Rating
                                 </Button>
+                            )}
+                        </Box>
+
+                        <Stack spacing={3}>
+                            <Box sx={{ display: 'flex', gap: 3, alignItems: 'center', width: '100%' }}>
+                                {cartItem ? (
+                                    <Box sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        bgcolor: 'primary.main',
+                                        borderRadius: '16px',
+                                        p: 1,
+                                        width: '100%',
+                                        justifyContent: 'space-between',
+                                        boxShadow: '0 12px 24px rgba(12, 131, 31, 0.2)'
+                                    }}>
+                                        <IconButton 
+                                            onClick={() => handleUpdateQuantity(cartItem.quantity - 1)} 
+                                            disabled={updating}
+                                            sx={{ color: 'white' }}
+                                        >
+                                            <RemoveIcon />
+                                        </IconButton>
+                                        <Typography variant="h5" sx={{ fontWeight: 900, color: 'white' }}>
+                                            {updating ? <CircularProgress size={24} color="inherit" /> : cartItem.quantity}
+                                        </Typography>
+                                        <IconButton 
+                                            onClick={() => handleUpdateQuantity(cartItem.quantity + 1)} 
+                                            disabled={updating}
+                                            sx={{ color: 'white' }}
+                                        >
+                                            <AddIcon />
+                                        </IconButton>
+                                    </Box>
+                                ) : (
+                                    <Button
+                                        fullWidth
+                                        variant="contained"
+                                        size="large"
+                                        disabled={product.stock <= 0 || updating}
+                                        startIcon={product.stock > 0 && !updating ? <CartIcon /> : null}
+                                        onClick={addToCartHandler}
+                                        sx={{
+                                            borderRadius: '16px',
+                                            py: 2,
+                                            fontWeight: 900,
+                                            fontSize: '1.1rem',
+                                            bgcolor: (product.stock <= 0 || updating) ? '#e2e8f0' : 'primary.main',
+                                            color: (product.stock <= 0 || updating) ? 'text.disabled' : 'white',
+                                            boxShadow: product.stock > 0 && !updating ? '0 12px 24px rgba(12, 131, 31, 0.25)' : 'none',
+                                            '&:hover': { bgcolor: (product.stock <= 0 || updating) ? '#e2e8f0' : 'primary.dark' }
+                                        }}
+                                    >
+                                        {updating ? (
+                                            <Stack direction="row" spacing={1} alignItems="center">
+                                                <CircularProgress size={20} color="inherit" />
+                                                <Typography variant="body1" sx={{ fontWeight: 900 }}>Processing...</Typography>
+                                            </Stack>
+                                        ) : (product.stock <= 0 ? 'Out of Stock' : 'Add to Cart')}
+                                    </Button>
+                                )}
                             </Box>
 
                             <Stack direction="row" spacing={4} sx={{ mt: 4 }}>

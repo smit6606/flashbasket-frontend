@@ -75,8 +75,21 @@ export default function LoginPage() {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: { xs: 4, md: 8 }, display: 'flex', flexGrow: 1 }}>
-      <Grid container component="main" sx={{ width: '100%', minHeight: '75vh', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.08)', border: '1px solid #f1f5f9' }}>
+    <Container maxWidth="lg" sx={{ 
+      py: { xs: 2, md: 8 }, 
+      display: 'flex', 
+      flexGrow: 1, 
+      alignItems: 'center',
+      minHeight: '100vh'
+    }}>
+      <Grid container component="main" sx={{ 
+        width: '100%', 
+        minHeight: { xs: 'auto', md: '75vh' }, 
+        borderRadius: { xs: '16px', md: '24px' }, 
+        overflow: 'hidden', 
+        boxShadow: '0 20px 60px rgba(0,0,0,0.08)', 
+        border: '1px solid #f1f5f9' 
+      }}>
       {/* Left Side: Image/Branding */}
       <Grid
         size={{ xs: 0, sm: 4, md: 6 }}
@@ -119,8 +132,8 @@ export default function LoginPage() {
       <Grid size={{ xs: 12, sm: 8, md: 6 }} component={Paper} elevation={0} square sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <Box
           sx={{
-            my: 8,
-            mx: { xs: 4, md: 10 },
+            my: { xs: 4, md: 8 },
+            mx: { xs: 3, md: 10 },
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'flex-start',

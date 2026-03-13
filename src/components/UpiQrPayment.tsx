@@ -10,10 +10,10 @@ import { useRouter } from 'next/navigation';
 interface UpiQrPaymentProps {
     amount: number;
     groupId: string;
-    onCompleted?: () => void;
+    onSuccess?: () => void;
 }
 
-export default function UpiQrPayment({ amount, groupId, onCompleted }: UpiQrPaymentProps) {
+export default function UpiQrPayment({ amount, groupId, onSuccess }: UpiQrPaymentProps) {
     const router = useRouter();
     const upiId = "8320436638@pthdfc";
     const merchantName = "FlashBasket Store";
@@ -28,7 +28,11 @@ export default function UpiQrPayment({ amount, groupId, onCompleted }: UpiQrPaym
 
     const handleFinish = () => {
         toast.success("Payment submitted! Our team will verify and update your order soon.");
-        router.push('/order-success');
+        if (onSuccess) {
+            onSuccess();
+        } else {
+            router.push('/order-success');
+        }
     };
 
     return (

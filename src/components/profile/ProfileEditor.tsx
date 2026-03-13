@@ -26,9 +26,13 @@ import {
     Lock as LockIcon,
     Security as SecurityIcon,
     ArrowBack as BackIcon,
-    LocationOn as LocationIcon
+    LocationOn as LocationIcon,
+    Home as HomeIcon,
+    NavigateNext as NextIcon
 } from '@mui/icons-material';
+import { Breadcrumbs, Link as MuiLink } from '@mui/material';
 import { useAuth } from '@/context/AuthContext';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 
@@ -175,6 +179,50 @@ export default function ProfileEditor() {
 
     return (
         <Box sx={{ maxWidth: 1000, mx: 'auto', p: { xs: 2, md: 4 } }}>
+            <Breadcrumbs 
+                separator={<NextIcon fontSize="small" sx={{ color: '#94a3b8' }} />} 
+                aria-label="breadcrumb"
+                sx={{ mb: 3 }}
+            >
+                <MuiLink
+                    component={Link}
+                    underline="hover"
+                    sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        color: 'text.secondary',
+                        fontWeight: 700,
+                        fontSize: '0.85rem'
+                    }}
+                    href="/"
+                >
+                    <HomeIcon sx={{ mr: 0.5, fontSize: '1rem' }} />
+                    Home
+                </MuiLink>
+                <Typography
+                    sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        color: 'text.secondary',
+                        fontWeight: 700,
+                        fontSize: '0.85rem'
+                    }}
+                >
+                    Account
+                </Typography>
+                <Typography
+                    sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        color: '#0C831F',
+                        fontWeight: 900,
+                        fontSize: '0.85rem'
+                    }}
+                >
+                    Profile Settings
+                </Typography>
+            </Breadcrumbs>
+
             <Box sx={{ mb: 6 }}>
                 <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.03em' }}>
                     Profile <span style={{ color: '#0C831F' }}>Settings</span>

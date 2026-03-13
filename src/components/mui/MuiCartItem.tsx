@@ -26,10 +26,10 @@ interface MuiCartItemProps {
         Product: {
             productName: string;
             images: string[];
-        };
+        } | null;
         Seller: {
             shop_name: string;
-        };
+        } | null;
     };
     onUpdateQuantity: (cartItemId: number, newQuantity: number) => void;
     onRemove: (cartItemId: number) => void;
@@ -40,20 +40,21 @@ export default function MuiCartItem({ item, onUpdateQuantity, onRemove }: MuiCar
         <Paper
             elevation={0}
             sx={{
-                p: 2.5,
+                p: { xs: 2, sm: 2.5 },
                 borderRadius: 1.5,
                 border: '1px solid #f1f5f9',
                 display: 'flex',
-                gap: 3,
-                alignItems: 'center',
+                gap: { xs: 2, sm: 3 },
+                alignItems: { xs: 'flex-start', sm: 'center' },
+                flexDirection: { xs: 'row', sm: 'row' },
                 '&:hover': { bgcolor: '#f8fafc' },
                 transition: 'background-color 0.2s',
             }}
         >
             <Box
                 sx={{
-                    width: 90,
-                    height: 90,
+                    width: { xs: 70, sm: 90 },
+                    height: { xs: 70, sm: 90 },
                     bgcolor: 'white',
                     borderRadius: 1,
                     p: 1.5,
@@ -65,8 +66,8 @@ export default function MuiCartItem({ item, onUpdateQuantity, onRemove }: MuiCar
                 }}
             >
                 <img
-                    src={item.Product.images?.[0] || 'https://placehold.co/200x200?text=Item'}
-                    alt={item.Product.productName}
+                    src={item.Product?.images?.[0] || 'https://placehold.co/200x200?text=Item'}
+                    alt={item.Product?.productName || 'Product'}
                     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />
             </Box>
@@ -79,36 +80,37 @@ export default function MuiCartItem({ item, onUpdateQuantity, onRemove }: MuiCar
                         color: 'text.secondary',
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
-                        fontSize: '0.65rem'
+                        fontSize: { xs: '0.6rem', sm: '0.65rem' }
                     }}
                 >
-                    {item.Seller.shop_name}
+                    {item.Seller?.shop_name || 'Generic Seller'}
                 </Typography>
                 <Typography
                     variant="subtitle1"
                     sx={{
                         fontWeight: 800,
-                        mb: 1.5,
+                        mb: { xs: 1, sm: 1.5 },
                         lineHeight: 1.2,
+                        fontSize: { xs: '0.9rem', sm: '1rem' },
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         display: '-webkit-box',
-                        WebkitLineClamp: 1,
+                        WebkitLineClamp: 2,
                         WebkitBoxOrient: 'vertical',
                     }}
                 >
-                    {item.Product.productName}
+                    {item.Product?.productName || 'Unknown Product'}
                 </Typography>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 900, color: 'text.primary' }}>₹{item.price}</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 900, color: 'text.primary', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>₹{item.price}</Typography>
                         <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.secondary', fontWeight: 700, opacity: 0.6 }}>
-                            ₹{Number(item.price) + 20}
+                            ₹{Number(item.price) + 40}
                         </Typography>
                     </Box>
 
-                    <Stack direction="row" spacing={2} alignItems="center">
+                    <Stack direction="row" spacing={2} alignItems="center" sx={{ alignSelf: { xs: 'flex-end', sm: 'auto' } }}>
                         <IconButton
                             size="small"
                             onClick={() => onRemove(item.id)}
@@ -127,29 +129,31 @@ export default function MuiCartItem({ item, onUpdateQuantity, onRemove }: MuiCar
                                 boxShadow: '0 4px 12px rgba(12, 131, 31, 0.15)'
                             }}
                         >
-                            {item.quantity > 1 && (
+                            {item.quantity > 1 ? (
                                 <Button
                                     onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
                                     sx={{ 
                                         color: 'white', 
-                                        minWidth: 32, 
-                                        height: 32,
+                                        minWidth: { xs: 28, sm: 32 }, 
+                                        height: { xs: 28, sm: 32 },
                                         p: 0,
                                         '&:hover': { bgcolor: 'primary.dark' } 
                                     }}
                                 >
                                     <RemoveIcon fontSize="small" />
                                 </Button>
+                            ) : (
+                                <Box sx={{ minWidth: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 } }} />
                             )}
-                            <Box sx={{ minWidth: 32, px: 1, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '0.85rem' }}>
+                            <Box sx={{ minWidth: { xs: 28, sm: 32 }, px: 1, height: { xs: 28, sm: 32 }, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '0.85rem' }}>
                                 {item.quantity}
                             </Box>
                             <Button
                                 onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
                                 sx={{ 
                                     color: 'white', 
-                                    minWidth: 32, 
-                                    height: 32,
+                                    minWidth: { xs: 28, sm: 32 }, 
+                                    height: { xs: 28, sm: 32 },
                                     p: 0,
                                     '&:hover': { bgcolor: 'primary.dark' } 
                                 }}

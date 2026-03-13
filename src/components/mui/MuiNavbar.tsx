@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { debounce } from 'lodash';
 import {
     AppBar,
     Box,
@@ -17,6 +18,8 @@ import {
     Tooltip,
     useScrollTrigger,
     Slide,
+    Divider,
+    useMediaQuery,
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -24,14 +27,16 @@ import {
     Room as RoomIcon,
     KeyboardArrowDown as ArrowDownIcon,
     Menu as MenuIcon,
+    Close as CloseIcon,
     AccountCircle,
 } from '@mui/icons-material';
-import { styled, alpha } from '@mui/material/styles';
+import { styled, alpha, useTheme } from '@mui/material/styles';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import MuiBackButton from './MuiBackButton';
+import MobileNavbarDrawer from './MobileNavbarDrawer';
 
 const Search = styled('div')(({ theme }) => ({
     position: 'relative',
@@ -41,14 +46,10 @@ const Search = styled('div')(({ theme }) => ({
         backgroundColor: '#e2e8f0',
         boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
     },
-    marginRight: theme.spacing(2),
+    marginRight: theme.spacing(1),
     marginLeft: 0,
     width: '100%',
-    [theme.breakpoints.up('sm')]: {
-        marginLeft: theme.spacing(3),
-        width: 'auto',
-    },
-    transition: theme.transitions.create(['background-color', 'box-shadow']),
+    transition: theme.transitions.create(['background-color', 'box-shadow', 'width']),
     border: '1px solid transparent',
 }));
 
@@ -66,15 +67,12 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
     color: 'text.primary',
     width: '100%',
     '& .MuiInputBase-input': {
-        padding: theme.spacing(1.5, 1.5, 1.5, 0),
+        padding: theme.spacing(1.2, 1.2, 1.2, 0),
         paddingLeft: `calc(1em + ${theme.spacing(4)})`,
         transition: theme.transitions.create('width'),
         width: '100%',
-        [theme.breakpoints.up('md')]: {
-            width: '60ch',
-        },
         fontWeight: 600,
-        fontSize: '0.95rem',
+        fontSize: '0.9rem',
         color: '#334155',
         '&::placeholder': {
             color: '#94a3b8',
@@ -97,12 +95,47 @@ export default function MuiNavbar() {
     const { user, logout } = useAuth();
     const { cartCount } = useCart();
     const router = useRouter();
+    const theme = useTheme();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [showMobileSearch, setShowMobileSearch] = useState(false);
 
-    const handleSearch = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && searchQuery.trim()) {
-            router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    // Responsive Breakpoints
+    const isBelow1359 = useMediaQuery('(max-width:1359px)');
+    const isBelow1024 = useMediaQuery('(max-width:1024px)');
+    const isBelow900 = useMediaQuery('(max-width:900px)');
+    const isBelow768 = useMediaQuery('(max-width:768px)');
+    const isBelow425 = useMediaQuery('(max-width:425px)');
+    const isBelow375 = useMediaQuery('(max-width:375px)');
+    const isBelow320 = useMediaQuery('(max-width:320px)');
+
+    // Debounced search function
+    const debouncedSearch = useCallback(
+        debounce((query: string) => {
+            if (query.trim()) {
+                router.push(`/products?search=${encodeURIComponent(query.trim())}`);
+            } else {
+                router.push('/products');
+            }
+        }, 500),
+        [router]
+    );
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setSearchQuery(value);
+        debouncedSearch(value);
+    };
+
+    const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            debouncedSearch.cancel();
+            if (searchQuery.trim()) {
+                router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+            } else {
+                router.push('/products');
+            }
         }
     };
 
@@ -120,186 +153,240 @@ export default function MuiNavbar() {
         router.push('/login');
     };
 
+    const toggleDrawer = (open: boolean) => (event: React.KeyboardEvent | React.MouseEvent) => {
+        if (event.type === 'keydown' && ((event as React.KeyboardEvent).key === 'Tab' || (event as React.KeyboardEvent).key === 'Shift')) {
+            return;
+        }
+        setIsDrawerOpen(open);
+    };
+
     return (
-        <HideOnScroll>
-            <AppBar 
-                position="sticky" 
-                elevation={0}
-                sx={{ 
-                    zIndex: 1201, 
-                    bgcolor: 'rgba(255, 255, 255, 0.85)', 
-                    backdropFilter: 'blur(20px)',
-                    borderBottom: '1px solid rgba(0,0,0,0.05)',
-                    boxShadow: '0 4px 30px rgba(0,0,0,0.03)'
-                }}
-            >
-                <Container maxWidth="xl">
-                    <Toolbar disableGutters sx={{ minHeight: { xs: 70, md: 80 } }}>
-                        {/* Logo */}
-                        <Box
-                            component={Link}
-                            href="/"
-                            sx={{
-                                mr: 4,
-                                display: 'flex',
-                                alignItems: 'center',
-                                textDecoration: 'none',
-                                gap: 1.5,
-                            }}
-                        >
-                            <img 
-                                src="/logo.png" 
-                                alt="FlashBasket Logo" 
-                                style={{ width: 40, height: 40, objectFit: 'contain' }} 
-                            />
-                            <Typography variant="h5" sx={{ fontWeight: 900, color: 'text.primary', display: { xs: 'none', md: 'block' } }}>
-                                FlashBasket
-                            </Typography>
-                        </Box>
-
-                        {/* Location Selector */}
-                        {user && (
-                            <Box sx={{ display: { xs: 'none', sm: 'flex' }, flexDirection: 'column', cursor: 'pointer', mr: 2 }}>
-                                <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', lineHeight: 1, fontSize: '0.65rem' }}>
-                                    Delivery in 11 mins
-                                </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                    <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary' }}>
-                                        Surat, Gujarat
-                                    </Typography>
-                                    <ArrowDownIcon sx={{ fontSize: 16 }} />
-                                </Box>
-                            </Box>
-                        )}
-
-                        {/* Search */}
-                        {user ? (
-                            <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
-                                <Search>
-                                    <SearchIconWrapper>
-                                        <SearchIcon sx={{ color: 'text.secondary' }} />
-                                    </SearchIconWrapper>
-                                    <StyledInputBase
-                                        placeholder="Search for 'groceries', 'electronics'..."
-                                        inputProps={{ 'aria-label': 'search' }}
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        onKeyDown={handleSearch}
-                                    />
-                                </Search>
-                            </Box>
-                        ) : (
-                            <Box sx={{ flexGrow: 1 }} />
-                        )}
-
-                        {/* Actions */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            {!user ? (
-                                <>
-                                    <Button component={Link} href="/login" sx={{ color: 'text.primary', fontWeight: 700 }}>
-                                        Login
-                                    </Button>
-                                    <Button
-                                        component={Link}
-                                        href="/register"
-                                        variant="contained"
-                                        sx={{
-                                            bgcolor: 'primary.main',
-                                            color: 'white',
-                                            fontWeight: 900,
-                                            px: 3,
-                                            borderRadius: 1,
-                                        }}
-                                    >
-                                        Sign Up
-                                    </Button>
-                                </>
-                            ) : (
-                                <>
-                                    <Box sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column', alignItems: 'flex-end', mr: 1 }}>
-                                        <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary' }}>
-                                            {user.user_name}
-                                        </Typography>
-                                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                                            Level 1 Buyer
-                                        </Typography>
-                                    </Box>
-                                    <Tooltip title="Profile Settings">
-                                        <IconButton onClick={handleMenu} sx={{ p: 0.5, border: '2px solid', borderColor: 'divider' }}>
-                                            <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', fontSize: '1rem', fontWeight: 700 }}>
-                                                {user.user_name?.charAt(0).toUpperCase()}
-                                            </Avatar>
-                                        </IconButton>
-                                    </Tooltip>
-                                    <Menu
-                                        id="menu-appbar"
-                                        anchorEl={anchorEl}
-                                        anchorOrigin={{
-                                            vertical: 'bottom',
-                                            horizontal: 'right',
-                                        }}
-                                        keepMounted
-                                        transformOrigin={{
-                                            vertical: 'top',
-                                            horizontal: 'right',
-                                        }}
-                                        open={Boolean(anchorEl)}
-                                        onClose={handleClose}
-                                        PaperProps={{
-                                            sx: {
-                                                mt: 1.5,
-                                                minWidth: 200,
-                                                borderRadius: 1.5,
-                                                boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-                                                border: '1px solid #f1f5f9',
-                                            }
-                                        }}
-                                    >
-                                        <MenuItem onClick={() => { handleClose(); router.push('/user/profile'); }} sx={{ fontWeight: 600 }}>Profile Settings</MenuItem>
-                                        <MenuItem onClick={() => { handleClose(); router.push('/orders'); }} sx={{ fontWeight: 600 }}>My Orders</MenuItem>
-                                        {user.role === 'admin' && <MenuItem onClick={() => { handleClose(); router.push('/admin'); }} sx={{ fontWeight: 600, color: 'primary.main' }}>Admin Panel</MenuItem>}
-                                        {user.role === 'seller' && <MenuItem onClick={() => { handleClose(); router.push('/seller'); }} sx={{ fontWeight: 600, color: 'primary.main' }}>Seller Panel</MenuItem>}
-                                        <MenuItem onClick={handleLogout} sx={{ fontWeight: 600, color: 'error.main' }}>Logout</MenuItem>
-                                    </Menu>
-                                </>
-                            )}
-
-                            <Button
+        <>
+            <HideOnScroll>
+                <AppBar 
+                    position="sticky" 
+                    elevation={0}
+                    sx={{ 
+                        zIndex: 1201, 
+                        bgcolor: 'rgba(255, 255, 255, 0.95)', 
+                        backdropFilter: 'blur(20px)',
+                        borderBottom: '1px solid rgba(0,0,0,0.05)',
+                        boxShadow: '0 4px 30px rgba(0,0,0,0.03)'
+                    }}
+                >
+                    <Container maxWidth="xl" sx={{ px: { xs: 1.5, sm: 2 } }}>
+                        <Toolbar disableGutters sx={{ minHeight: { xs: 60, md: 80 }, gap: { xs: 0.5, sm: 1.5, md: 2 }, justifyContent: 'space-between' }}>
+                            {/* Logo Container */}
+                            <Box
                                 component={Link}
-                                href="/cart"
-                                variant="contained"
-                                startIcon={
-                                    <Badge badgeContent={cartCount} color="error" sx={{ '& .MuiBadge-badge': { fontWeight: 900 } }}>
-                                        <ShoppingCartIcon />
-                                    </Badge>
-                                }
+                                href="/"
                                 sx={{
-                                    bgcolor: 'primary.main',
-                                    color: 'white',
-                                    fontWeight: 900,
-                                    borderRadius: 1,
-                                    px: 4,
-                                    py: 1.5,
-                                    display: { xs: 'none', sm: 'flex' },
-                                    boxShadow: '0 8px 20px rgba(12, 131, 31, 0.2)',
-                                    '&:hover': {
-                                        bgcolor: 'primary.dark',
-                                        boxShadow: '0 12px 24px rgba(12, 131, 31, 0.3)',
-                                    }
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    textDecoration: 'none',
+                                    gap: 1.5,
+                                    flexShrink: 0,
+                                    mr: { xs: 1, md: 4 }
                                 }}
                             >
-                                My Cart
-                            </Button>
-
-                            <IconButton component={Link} href="/cart" sx={{ display: { xs: 'flex', sm: 'none' }, color: 'primary.main' }}>
-                                <Badge badgeContent={cartCount} color="error">
-                                    <ShoppingCartIcon />
-                                </Badge>
-                            </IconButton>
+                                <img 
+                                    src="/logo.png" 
+                                    alt="FlashBasket Logo" 
+                                    style={{ width: isBelow320 ? 32 : 40, height: isBelow320 ? 32 : 40, objectFit: 'contain' }} 
+                                />
+                                {!isBelow320 && (
+                                <Typography variant="h5" sx={{ fontWeight: 900, color: 'text.primary', whiteSpace: 'nowrap', fontSize: isBelow425 ? '1.1rem' : '1.5rem' }}>
+                                    FlashBasket
+                                </Typography>
+                            )}
                         </Box>
-                    </Toolbar>
-                </Container>
-            </AppBar>
-        </HideOnScroll>
+
+                        {/* Search Bar - Responsive Width */}
+                        {(!isBelow768 || showMobileSearch) && (
+                            <Box sx={{ 
+                                flexGrow: 1, 
+                                display: 'flex', 
+                                justifyContent: 'center',
+                                position: isBelow768 ? (showMobileSearch ? 'absolute' : 'relative') : 'relative',
+                                left: isBelow768 ? 0 : 'auto',
+                                right: isBelow768 ? 0 : 'auto',
+                                px: isBelow768 ? 2 : 0,
+                                bgcolor: isBelow768 ? 'white' : 'transparent',
+                                zIndex: 110,
+                                height: '100%',
+                                alignItems: 'center',
+                                transition: 'all 0.3s ease'
+                            }}>
+                                <Search sx={{ 
+                                    maxWidth: isBelow1024 ? (isBelow900 ? '400px' : '500px') : (isBelow1359 ? '600px' : '800px'),
+                                    width: { xs: '100%', sm: 'auto' }
+                                }}>
+                                    <SearchIconWrapper>
+                                        <SearchIcon sx={{ color: 'text.secondary', fontSize: '1.2rem' }} />
+                                    </SearchIconWrapper>
+                                    <StyledInputBase
+                                        placeholder="Search products..."
+                                        inputProps={{ 'aria-label': 'search' }}
+                                        value={searchQuery}
+                                        onChange={handleSearchChange}
+                                        onKeyDown={handleSearchKeyDown}
+                                        autoFocus={showMobileSearch}
+                                    />
+                                    {isBelow768 && showMobileSearch && (
+                                        <IconButton size="small" onClick={() => setShowMobileSearch(false)} sx={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)' }}>
+                                            <CloseIcon fontSize="small" />
+                                        </IconButton>
+                                    )}
+                                </Search>
+                            </Box>
+                        )}
+
+                        {/* Actions Container */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1.5, md: 2 }, flexShrink: 0 }}>
+                            {/* Search Icon for mobile screens */}
+                            {isBelow768 && !isBelow425 && (
+                                <IconButton onClick={() => setShowMobileSearch(!showMobileSearch)} sx={{ color: 'text.secondary' }}>
+                                    {showMobileSearch ? <CloseIcon /> : <SearchIcon />}
+                                </IconButton>
+                            )}
+
+                                {!user ? (
+                                    <>
+                                        {!isBelow425 && (
+                                            <Button 
+                                                component={Link} 
+                                                href="/login" 
+                                                sx={{ 
+                                                    color: 'text.primary', 
+                                                    fontWeight: 800,
+                                                    fontSize: isBelow900 ? '0.85rem' : '1rem',
+                                                    minWidth: 'auto',
+                                                    px: { xs: 1, md: 2 }
+                                                }}
+                                            >
+                                                Login
+                                            </Button>
+                                        )}
+                                        {!isBelow900 && (
+                                            <Button
+                                                component={Link}
+                                                href="/register"
+                                                variant="contained"
+                                                sx={{
+                                                    bgcolor: 'primary.main',
+                                                    color: 'white',
+                                                    fontWeight: 900,
+                                                    px: 3,
+                                                    borderRadius: 2,
+                                                    whiteSpace: 'nowrap'
+                                                }}
+                                            >
+                                                Sign Up
+                                            </Button>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
+                                        {!isBelow900 && (
+                                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', mr: 1 }}>
+                                                <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary', whiteSpace: 'nowrap' }}>
+                                                    {user.user_name}
+                                                </Typography>
+                                                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                                                    Buyer
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                        {!isBelow425 && (
+                                            <Tooltip title="Profile">
+                                                <IconButton onClick={handleMenu} sx={{ p: 0.5 }}>
+                                                    <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', fontSize: '0.9rem', fontWeight: 700 }}>
+                                                        {user.user_name?.charAt(0).toUpperCase()}
+                                                    </Avatar>
+                                                </IconButton>
+                                            </Tooltip>
+                                        )}
+                                        <Menu
+                                            anchorEl={anchorEl}
+                                            open={Boolean(anchorEl)}
+                                            onClose={handleClose}
+                                            PaperProps={{
+                                                sx: { mt: 1.5, minWidth: 200, borderRadius: 2, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }
+                                            }}
+                                        >
+                                            <MenuItem onClick={() => { handleClose(); router.push('/user/profile'); }}>Profile</MenuItem>
+                                            <MenuItem onClick={() => { handleClose(); router.push('/user/favourites'); }}>Favourites</MenuItem>
+                                            <MenuItem onClick={() => { handleClose(); router.push('/orders'); }}>Orders</MenuItem>
+                                            <Divider />
+                                            <MenuItem onClick={handleLogout} sx={{ color: 'error.main', fontWeight: 700 }}>Logout</MenuItem>
+                                        </Menu>
+                                    </>
+                                )}
+
+                                {/* Cart - Simplified on mobile */}
+                                <Button
+                                    component={Link}
+                                    href="/cart"
+                                    variant={isBelow768 ? "text" : "contained"}
+                                    startIcon={
+                                        <Badge badgeContent={cartCount} color="error">
+                                            <ShoppingCartIcon sx={{ 
+                                                fontSize: isBelow768 ? '1.75rem' : 'inherit',
+                                                color: isBelow768 ? 'primary.main' : 'inherit'
+                                            }} />
+                                        </Badge>
+                                    }
+                                    sx={{
+                                        bgcolor: isBelow768 ? 'transparent' : 'primary.main',
+                                        color: isBelow768 ? 'primary.main' : 'white',
+                                        fontWeight: 900,
+                                        borderRadius: 2,
+                                        px: isBelow768 ? 1 : (isBelow900 ? 2 : 4),
+                                        py: isBelow900 ? 1 : 1.5,
+                                        minWidth: 'auto',
+                                        fontSize: isBelow900 ? '0.85rem' : '1rem',
+                                        boxShadow: isBelow768 ? 'none' : '0 8px 16px rgba(12, 131, 31, 0.2)',
+                                        '&:hover': { 
+                                            bgcolor: isBelow768 ? alpha('#0C831F', 0.05) : 'primary.dark',
+                                            boxShadow: isBelow768 ? 'none' : '0 12px 20px rgba(12, 131, 31, 0.3)'
+                                        },
+                                        whiteSpace: 'nowrap',
+                                        '& .MuiButton-startIcon': {
+                                            margin: isBelow768 ? 0 : '0 8px 0 -4px',
+                                            mr: isBelow768 ? 0 : 1
+                                        }
+                                    }}
+                                >
+                                    {!isBelow768 && 'My Cart'}
+                                </Button>
+
+                                {/* Mobile Hamburger Menu Icon */}
+                                {isBelow425 && (
+                                    <IconButton 
+                                        onClick={() => setIsDrawerOpen(!isDrawerOpen)} 
+                                        sx={{ 
+                                            color: 'primary.main', 
+                                            bgcolor: alpha(theme.palette.primary.main, 0.08), 
+                                            '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.15) } 
+                                        }}
+                                    >
+                                        {isDrawerOpen ? <CloseIcon /> : <MenuIcon />}
+                                    </IconButton>
+                                )}
+                            </Box>
+                        </Toolbar>
+                    </Container>
+                </AppBar>
+            </HideOnScroll>
+
+            {/* Mobile Sidebar / Drawer - Moved outside HideOnScroll to fix JSX error */}
+            <MobileNavbarDrawer 
+                isOpen={isDrawerOpen}
+                onClose={() => setIsDrawerOpen(false)}
+                user={user}
+                cartCount={cartCount}
+                onProductsClick={() => { router.push('/products'); setIsDrawerOpen(false); }}
+            />
+        </>
     );
 }

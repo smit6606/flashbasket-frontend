@@ -8,7 +8,7 @@ import CheckoutForm from './CheckoutForm';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
-export default function StripePayment({ clientSecret }: { clientSecret: string }) {
+export default function StripePayment({ clientSecret, onSuccess }: { clientSecret: string, onSuccess?: () => void }) {
 
     const appearance = {
         theme: 'stripe' as const,
@@ -26,7 +26,7 @@ export default function StripePayment({ clientSecret }: { clientSecret: string }
         <div className="Stripe">
             {clientSecret && (
                 <Elements options={options} stripe={stripePromise}>
-                    <CheckoutForm clientSecret={clientSecret} />
+                    <CheckoutForm clientSecret={clientSecret} onSuccess={onSuccess} />
                 </Elements>
             )}
         </div>

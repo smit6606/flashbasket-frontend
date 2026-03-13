@@ -41,21 +41,22 @@ interface CartItemType {
 
 export default function CartPage() {
   const { user, token } = useAuth();
-  const { refreshCart } = useCart();
+  const { cartItems, refreshCart, updateQuantity, removeFromCart } = useCart();
   const router = useRouter();
-  const [cart, setCart] = useState<{ items: CartItemType[]; subtotal: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cartData, setCartData] = useState<{ items: any[]; subtotal: string } | null>(null);
 
   useEffect(() => {
     if (!token) {
-      router.push('/login');
-      return;
+        toast.info('Please login to access your cart', { toastId: 'cart-login-toast' });
+        setLoading(false);
+        return;
     }
 
     const fetchCart = async () => {
       try {
-        const response = await api.get('/cart');
-        setCart(response.data);
+        const response = await api.get(`/cart?t=${Date.now()}`);
+        setCartData(response.data);
       } catch (err) {
         console.error('Failed to fetch cart', err);
       } finally {
@@ -63,25 +64,27 @@ export default function CartPage() {
       }
     };
     fetchCart();
-  }, [token, router]);
+  }, [token]);
 
-  const updateQuantity = async (cartItemId: number, newQuantity: number) => {
-    if (newQuantity < 1) return;
+  const handleUpdateQuantity = async (cartItemId: number, productId: number, newQuantity: number) => {
     try {
-      await api.put('/cart/update', { cartItemId, quantity: newQuantity });
-      const response = await api.get('/cart');
-      setCart(response.data);
+      await updateQuantity(productId, newQuantity, cartItemId);
+      if (token) {
+          const response = await api.get('/cart');
+          setCartData(response.data);
+      }
     } catch (err) {
       toast.error('Failed to update quantity');
     }
   };
 
-  const removeItem = async (cartItemId: number) => {
+  const handleRemoveItem = async (cartItemId: number, productId: number) => {
     try {
-      await api.post('/cart/remove', { cartItemId });
-      const response = await api.get('/cart');
-      setCart(response.data);
-      await refreshCart();
+      await removeFromCart(productId, cartItemId);
+      if (token) {
+          const response = await api.get(`/cart?t=${Date.now()}`);
+          setCartData(response.data);
+      }
       toast.info('Item Removed');
     } catch (err) {
       toast.error('Failed to remove item');
@@ -98,7 +101,65 @@ export default function CartPage() {
     </Box>
   );
 
-  if (!cart || cart.items.length === 0) {
+  // Requirement: If not logged in, show Login Access Section
+  if (!token) {
+    return (
+      <Container maxWidth="sm" sx={{ py: 15, textAlign: 'center' }}>
+        <Paper elevation={0} sx={{ 
+            p: 8, 
+            borderRadius: '32px', 
+            border: '1px solid #e2e8f0', 
+            bgcolor: '#fff',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.05)'
+        }}>
+          <Box sx={{ 
+              width: 80, 
+              height: 80, 
+              bgcolor: alpha('#0C831F', 0.1), 
+              borderRadius: '24px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 4
+          }}>
+            <CartIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+          </Box>
+          <Typography variant="h4" sx={{ fontWeight: 900, mb: 2, letterSpacing: '-0.02em' }}>
+            Login to access your cart
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mb: 6, lineHeight: 1.6 }}>
+            Please login to view and manage your cart items. We'll keep your fresh picks safe!
+          </Typography>
+          <Button
+            variant="contained"
+            size="large"
+            fullWidth
+            onClick={() => router.push('/login')}
+            sx={{ 
+                py: 2, 
+                borderRadius: '16px', 
+                fontWeight: 900, 
+                fontSize: '1.1rem',
+                boxShadow: '0 12px 24px rgba(12, 131, 31, 0.2)'
+            }}
+          >
+            Login to Continue
+          </Button>
+          <Button
+            variant="text"
+            onClick={() => router.push('/')}
+            sx={{ mt: 3, fontWeight: 800, color: 'text.secondary', textTransform: 'none' }}
+          >
+            Continue as Guest
+          </Button>
+        </Paper>
+      </Container>
+    );
+  }
+
+  // Requirement: If logged in but empty
+  if (!cartData || cartData.items.length === 0) {
     return (
       <Container maxWidth="sm" sx={{ py: 15, textAlign: 'center' }}>
         <Paper elevation={0} sx={{ p: 8, borderRadius: 4, border: '2px dashed #e2e8f0', bgcolor: 'transparent' }}>
@@ -129,7 +190,7 @@ export default function CartPage() {
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 6 }}>
         <Typography variant="h3" sx={{ fontWeight: 900 }}>Your Cart</Typography>
         <Box sx={{ px: 2, py: 0.5, bgcolor: '#f1f5f9', borderRadius: 2, border: '1px solid #e2e8f0' }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'text.secondary' }}>{cart.items.length} ITEMS</Typography>
+          <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'text.secondary' }}>{cartData.items.length} ITEMS</Typography>
         </Box>
       </Stack>
 
@@ -137,12 +198,12 @@ export default function CartPage() {
         {/* Cart Items */}
         <Grid size={{ xs: 12, md: 7.5 }}>
           <Stack spacing={3}>
-            {cart.items.map((item) => (
+            {cartData.items.map((item) => (
               <MuiCartItem
                 key={item.id}
                 item={item}
-                onUpdateQuantity={updateQuantity}
-                onRemove={removeItem}
+                onUpdateQuantity={(id, qty) => handleUpdateQuantity(id, item.productId, qty)}
+                onRemove={(id) => handleRemoveItem(id, item.productId)}
               />
             ))}
           </Stack>
@@ -159,7 +220,7 @@ export default function CartPage() {
         {/* Summary */}
         <Grid size={{ xs: 12, md: 4.5 }}>
           <MuiCartSummary
-            subtotal={cart.subtotal}
+            subtotal={cartData.subtotal}
             onCheckout={handleCheckout}
           />
         </Grid>

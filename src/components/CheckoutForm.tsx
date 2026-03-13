@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useRouter } from 'next/navigation';
 
-export default function CheckoutForm({ clientSecret }: { clientSecret: string }) {
+export default function CheckoutForm({ clientSecret, onSuccess }: { clientSecret: string, onSuccess?: () => void }) {
     const stripe = useStripe();
     const elements = useElements();
     const router = useRouter();

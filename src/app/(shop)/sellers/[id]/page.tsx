@@ -18,17 +18,20 @@ import {
     Skeleton,
     Avatar,
     Divider,
+    CircularProgress,
 } from '@mui/material';
 import {
     Storefront as StoreIcon,
     MyLocation as LocationIcon,
     Verified as VerifiedIcon,
     Add as AddIcon,
+    Remove as RemoveIcon,
     ShoppingBagOutlined as BagIcon,
     Star as StarIcon,
     ArrowBack as BackIcon,
 } from '@mui/icons-material';
 import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import Link from 'next/link';
@@ -56,9 +59,11 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
     const { id } = use(params);
     const router = useRouter();
     const { user } = useAuth();
+    const { refreshCart, getItemFromCart } = useCart();
     const [products, setProducts] = useState<Product[]>([]);
     const [seller, setSeller] = useState<Seller | null>(null);
     const [loading, setLoading] = useState(true);
+    const [updatingId, setUpdatingId] = useState<number | null>(null);
 
     const addToCart = async (e: React.MouseEvent, product: Product) => {
         e.preventDefault();
@@ -69,6 +74,7 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
             return;
         }
 
+        setUpdatingId(product.id);
         try {
             await api.post('/cart/add', {
                 productId: product.id,
@@ -76,10 +82,33 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
                 price: product.price,
                 quantity: 1
             });
+            await refreshCart();
             toast.success(`${product.productName} added to cart!`);
         } catch (error: any) {
             console.error('Failed to add to cart', error);
             toast.error(error.response?.data?.message || 'Failed to add to cart');
+        } finally {
+            setUpdatingId(null);
+        }
+    };
+
+    const handleUpdateQuantity = async (e: React.MouseEvent, productId: number, cartItemId: number, newQuantity: number) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        setUpdatingId(productId);
+        try {
+            if (newQuantity <= 0) {
+                await api.delete('/cart/remove', { cartItemId });
+                toast.info('Item Removed');
+            } else {
+                await api.put('/cart/update', { cartItemId, quantity: newQuantity });
+            }
+            await refreshCart();
+        } catch (err: any) {
+            toast.error('Failed to update quantity');
+        } finally {
+            setUpdatingId(null);
         }
     };
 
@@ -251,7 +280,6 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
                                             transform: 'translateY(-8px)',
                                             boxShadow: '0 20px 40px rgba(0,0,0,0.06)',
                                             borderColor: 'primary.main',
-                                            '& .add-btn': { bgcolor: 'primary.main', color: 'white', transform: 'scale(1.1)' }
                                         }
                                     }}
                                 >
@@ -300,21 +328,72 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
                                                 <Typography variant="h5" sx={{ fontWeight: 900, opacity: product.stock <= 0 ? 0.3 : 1 }}>
                                                     ₹{product.price}
                                                 </Typography>
-                                                <IconButton
-                                                    className="add-btn"
-                                                    onClick={(e) => addToCart(e, product)}
-                                                    disabled={product.stock <= 0}
-                                                    sx={{
-                                                        bgcolor: product.stock <= 0 ? '#f1f5f9' : '#f1f5f9',
-                                                        color: product.stock <= 0 ? 'text.disabled' : 'primary.main',
-                                                        borderRadius: '12px',
-                                                        width: 44,
-                                                        height: 44,
-                                                        transition: 'all 0.3s'
-                                                    }}
-                                                >
-                                                    <AddIcon sx={{ fontWeight: 900 }} />
-                                                </IconButton>
+                                            {(() => {
+                                                const cartItem = getItemFromCart(product.id);
+                                                const isUpdating = updatingId === product.id;
+
+                                                if (cartItem) {
+                                                    return (
+                                                        <Box 
+                                                            sx={{ 
+                                                                mt: 2,
+                                                                display: 'flex', 
+                                                                alignItems: 'center', 
+                                                                justifyContent: 'space-between',
+                                                                bgcolor: 'primary.main',
+                                                                borderRadius: '12px',
+                                                                height: 48,
+                                                                overflow: 'hidden',
+                                                                boxShadow: '0 8px 16px rgba(12, 131, 31, 0.2)',
+                                                            }}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            <IconButton 
+                                                                size="small" 
+                                                                onClick={(e) => handleUpdateQuantity(e, product.id, cartItem.id, cartItem.quantity - 1)}
+                                                                disabled={isUpdating}
+                                                                sx={{ color: 'white', '&:hover': { bgcolor: 'primary.dark' } }}
+                                                            >
+                                                                <RemoveIcon fontSize="small" />
+                                                            </IconButton>
+                                                            
+                                                            <Box sx={{ color: 'white', fontWeight: 900, fontSize: '1rem' }}>
+                                                                {isUpdating ? <CircularProgress size={16} color="inherit" /> : cartItem.quantity}
+                                                            </Box>
+
+                                                            <IconButton 
+                                                                size="small" 
+                                                                onClick={(e) => handleUpdateQuantity(e, product.id, cartItem.id, cartItem.quantity + 1)}
+                                                                disabled={isUpdating}
+                                                                sx={{ color: 'white', '&:hover': { bgcolor: 'primary.dark' } }}
+                                                            >
+                                                                <AddIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </Box>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <Button
+                                                        fullWidth
+                                                        variant="contained"
+                                                        onClick={(e) => addToCart(e, product)}
+                                                        disabled={product.stock <= 0 || isUpdating}
+                                                        startIcon={isUpdating ? <CircularProgress size={18} color="inherit" /> : <AddIcon />}
+                                                        sx={{
+                                                            mt: 2,
+                                                            borderRadius: '12px',
+                                                            py: 1.2,
+                                                            fontWeight: 900,
+                                                            bgcolor: (product.stock <= 0 || isUpdating) ? '#f1f5f9' : 'primary.main',
+                                                            color: (product.stock <= 0 || isUpdating) ? 'text.disabled' : 'white',
+                                                            '&:hover': { bgcolor: (product.stock <= 0 || isUpdating) ? '#f1f5f9' : 'primary.dark' }
+                                                        }}
+                                                    >
+                                                        {isUpdating ? 'Processing...' : (product.stock <= 0 ? 'Out of Stock' : 'Add to Cart')}
+                                                    </Button>
+                                                );
+                                            })()}
                                             </Stack>
                                         </Box>
                                     </Box>

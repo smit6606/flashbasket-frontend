@@ -182,8 +182,21 @@ export default function RegisterPage() {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: { xs: 4, md: 8 }, display: 'flex', flexGrow: 1 }}>
-      <Grid container component="main" sx={{ width: '100%', minHeight: '75vh', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.08)', border: '1px solid #f1f5f9' }}>
+    <Container maxWidth="lg" sx={{ 
+      py: { xs: 2, md: 8 }, 
+      display: 'flex', 
+      flexGrow: 1, 
+      alignItems: 'center',
+      minHeight: '100vh'
+    }}>
+      <Grid container component="main" sx={{ 
+        width: '100%', 
+        minHeight: { xs: 'auto', md: '75vh' }, 
+        borderRadius: { xs: '16px', md: '24px' }, 
+        overflow: 'hidden', 
+        boxShadow: '0 20px 60px rgba(0,0,0,0.08)', 
+        border: '1px solid #f1f5f9' 
+      }}>
       <Grid
         size={{ xs: 0, sm: 4, md: 6 }}
         sx={{
@@ -227,7 +240,7 @@ export default function RegisterPage() {
             <Grid container spacing={3}>
               <Grid size={{ xs: 12 }}>
                 <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', color: 'text.secondary', mb: 1, display: 'block' }}>ACCOUNT TYPE</Typography>
-                <Stack direction="row" spacing={2}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                   {['user', 'seller', 'delivery'].map((r) => (
                     <Button
                       key={r}

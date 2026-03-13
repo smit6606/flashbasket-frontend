@@ -75,5 +75,5 @@ export const api = {
   post: (endpoint: string, body: any) => apiFetch(endpoint, { method: 'POST', body: body instanceof FormData ? body : JSON.stringify(body) }),
   put: (endpoint: string, body: any) => apiFetch(endpoint, { method: 'PUT', body: body instanceof FormData ? body : JSON.stringify(body) }),
   patch: (endpoint: string, body: any) => apiFetch(endpoint, { method: 'PATCH', body: body instanceof FormData ? body : JSON.stringify(body) }),
-  delete: (endpoint: string) => apiFetch(endpoint, { method: 'DELETE' }),
+  delete: (endpoint: string, body?: any) => apiFetch(endpoint, { method: 'DELETE', body: body ? JSON.stringify(body) : undefined }),
 };

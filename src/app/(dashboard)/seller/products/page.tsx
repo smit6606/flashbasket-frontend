@@ -54,6 +54,7 @@ export default function SellerProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [totalItems, setTotalItems] = useState(0);
+    const isMounted = React.useRef(false);
 
     const [statusFilter, setStatusFilter] = useState('all');
     const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
@@ -91,30 +92,38 @@ export default function SellerProductsPage() {
         }
     }, [paginationModel, sortModel, searchQuery, statusFilter]);
 
+    // Track mount status
+    useEffect(() => {
+        isMounted.current = true;
+        return () => {
+            isMounted.current = false;
+        };
+    }, []);
+
     // Unified Fetch Logic with Debounce
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchProducts();
         }, searchQuery ? 500 : 0);
 
-        return () => clearTimeout(timer);
+        return () => {
+            clearTimeout(timer);
+        };
     }, [paginationModel.page, paginationModel.pageSize, sortModel, searchQuery, statusFilter, fetchProducts]);
 
     const handlePaginationModelChange = useCallback((newModel: GridPaginationModel) => {
-        Promise.resolve().then(() => {
-            setPaginationModel(prev => {
-                if (JSON.stringify(prev) === JSON.stringify(newModel)) return prev;
-                return newModel;
-            });
+        if (!isMounted.current) return;
+        setPaginationModel(prev => {
+            if (prev.page === newModel.page && prev.pageSize === newModel.pageSize) return prev;
+            return newModel;
         });
     }, []);
 
     const handleSortModelChange = useCallback((newModel: GridSortModel) => {
-        Promise.resolve().then(() => {
-            setSortModel(prev => {
-                if (JSON.stringify(prev) === JSON.stringify(newModel)) return prev;
-                return newModel;
-            });
+        if (!isMounted.current) return;
+        setSortModel(prev => {
+            if (JSON.stringify(prev) === JSON.stringify(newModel)) return prev;
+            return newModel;
         });
     }, []);
 

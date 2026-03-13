@@ -20,7 +20,8 @@ import {
     Card,
     Grid,
     Skeleton,
-    Chip
+    Chip,
+    Dialog
 } from '@mui/material';
 import { 
     CheckCircle as CheckIcon, 
@@ -29,6 +30,8 @@ import {
     LocalShipping as DeliveryIcon,
     AccessTime as TimeIcon
 } from '@mui/icons-material';
+
+import { toast } from 'react-toastify';
 
 interface Order {
     id: number;
@@ -53,6 +56,10 @@ export default function OrdersPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+    const [cancelling, setCancelling] = useState(false);
+
     const steps = [
         { label: 'Placed', status: ['pending'] },
         { label: 'Preparing', status: ['preparing'] },
@@ -76,7 +83,6 @@ export default function OrdersPage() {
             return;
         }
 
-        // If not a 'user' role, redirect to dashboard to avoid 403 on /orders/user
         if (user && user.role !== 'user') {
             router.push(`/${user.role}`);
             return;
@@ -98,15 +104,34 @@ export default function OrdersPage() {
         }
     }, [token, user, router]);
 
-    const handleCancel = async (id: number) => {
-        if(!window.confirm('Are you sure you want to cancel this order?')) return;
+    const handleCancelClick = (id: number) => {
+        setSelectedOrderId(id);
+        setCancelDialogOpen(true);
+    };
+
+    const confirmCancel = async () => {
+        if (!selectedOrderId) return;
+        setCancelling(true);
         try {
-            await api.patch(`/orders/${id}/status`, { status: 'cancelled' });
+            await api.patch(`/orders/${selectedOrderId}/status`, { status: 'cancelled' });
             const response = await api.get('/orders/user');
             setOrders(response.data);
-            alert('Order cancelled successfully');
+            toast.success('Order cancelled successfully');
+            setCancelDialogOpen(false);
         } catch (err) {
-            alert('Cancel failed');
+            toast.error('Failed to cancel order');
+        } finally {
+            setCancelling(false);
+            setSelectedOrderId(null);
+        }
+    };
+
+    const getPaymentLabel = (method: string) => {
+        switch (method?.toLowerCase()) {
+            case 'cod': return 'Cash on Delivery';
+            case 'stripe': return 'Stripe Payment';
+            case 'upi': return 'UPI Payment';
+            default: return method || 'Not Specified';
         }
     };
 
@@ -230,8 +255,13 @@ export default function OrdersPage() {
                                             </Stack>
                                         </Grid>
                                         <Grid size={{ xs: 12, md: 5 }}>
-                                            <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 3, color: 'text.secondary' }}>DELIVERY INFO</Typography>
+                                            <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 3, color: 'text.secondary' }}>ORDER INFO</Typography>
                                             <Paper elevation={0} sx={{ p: 3, bgcolor: '#f1f5f9', borderRadius: 4 }}>
+                                                <Typography variant="caption" sx={{ fontWeight: 900, display: 'block', mb: 1 }}>PAYMENT METHOD</Typography>
+                                                <Typography variant="body2" sx={{ fontWeight: 800, mb: 2, color: 'primary.main' }}>
+                                                    {getPaymentLabel((order as any).paymentMethod)}
+                                                </Typography>
+
                                                 <Typography variant="caption" sx={{ fontWeight: 900, display: 'block', mb: 1 }}>ORDER DATE</Typography>
                                                 <Typography variant="body2" sx={{ fontWeight: 700, mb: 2 }}>{new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString()}</Typography>
 
@@ -277,7 +307,7 @@ export default function OrdersPage() {
                                             <Button 
                                                 variant="text" 
                                                 color="error" 
-                                                onClick={() => handleCancel(order.id)}
+                                                onClick={() => handleCancelClick(order.id)}
                                                 sx={{ fontWeight: 900 }}
                                             >
                                                 Cancel Order
@@ -295,6 +325,39 @@ export default function OrdersPage() {
                     })}
                 </Stack>
             )}
+
+            {/* Confirmation Dialog */}
+            <Dialog 
+                open={cancelDialogOpen} 
+                onClose={() => !cancelling && setCancelDialogOpen(false)}
+                PaperProps={{ sx: { borderRadius: 4, p: 2, maxWidth: 400 } }}
+            >
+                <Typography variant="h5" sx={{ fontWeight: 900, mb: 1, px: 2, pt: 2 }}>Confirm Cancellation</Typography>
+                <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, px: 2, mb: 4 }}>
+                    Are you sure you want to cancel this order? This action cannot be undone.
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2, px: 2, pb: 2 }}>
+                    <Button 
+                        fullWidth 
+                        variant="outlined" 
+                        onClick={() => setCancelDialogOpen(false)}
+                        disabled={cancelling}
+                        sx={{ borderRadius: 3, fontWeight: 900, py: 1.5 }}
+                    >
+                        Keep Order
+                    </Button>
+                    <Button 
+                        fullWidth 
+                        variant="contained" 
+                        color="error" 
+                        onClick={confirmCancel}
+                        disabled={cancelling}
+                        sx={{ borderRadius: 3, fontWeight: 900, py: 1.5 }}
+                    >
+                        {cancelling ? <CircularProgress size={24} color="inherit" /> : 'Confirm Cancel'}
+                    </Button>
+                </Box>
+            </Dialog>
         </Box>
     );
 }

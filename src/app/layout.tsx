@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
+import { FavouriteProvider } from "@/context/FavouriteContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -23,9 +24,11 @@ export default function RootLayout({
         <ThemeRegistry>
           <AuthProvider>
             <CartProvider>
-              <SocketProvider>
-                {children}
-              </SocketProvider>
+              <FavouriteProvider>
+                <SocketProvider>
+                  {children}
+                </SocketProvider>
+              </FavouriteProvider>
             </CartProvider>
           </AuthProvider>
           <ToastContainer position="top-right" autoClose={2000} hideProgressBar newestOnTop closeOnClick pauseOnHover draggable />
