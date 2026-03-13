@@ -46,17 +46,19 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     const [newImages, setNewImages] = useState<File[]>([]);
     const [newImageUrls, setNewImageUrls] = useState<string[]>([]);
 
-    const activeSubcategories = categories.find(c => c.id.toString() === formData.categoryId)?.SubCategories || [];
+    const activeSubcategories = Array.isArray(categories) 
+        ? (categories.find(c => c.id.toString() === formData.categoryId)?.SubCategories || [])
+        : [];
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const [catRes, prodRes] = await Promise.all([
-                    api.get('/categories'),
+                    api.get('/categories?limit=100'),
                     api.get(`/products/${id}`)
                 ]);
                 
-                setCategories(catRes.data);
+                setCategories(catRes.data.items || []);
                 
                 const p = prodRes.data;
                 setFormData({
@@ -126,7 +128,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             });
 
             await api.put(`/seller/product/${id}`, submitData);
-            toast.success('Product updated successfully!');
+            toast.success('Product Updated');
             router.push('/seller/products');
         } catch (err: any) {
             toast.error(err.message || 'Failed to update product');
@@ -234,7 +236,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                         </Card>
 
                         <Button type="submit" fullWidth variant="contained" disabled={submitting} sx={{ py: 2, borderRadius: 3, fontWeight: 900 }}>
-                            {submitting ? 'Updating...' : 'Save Changes'}
+                            {submitting ? (
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                    <CircularProgress size={20} color="inherit" />
+                                    <Typography variant="body2" sx={{ fontWeight: 900 }}>Updating...</Typography>
+                                </Stack>
+                            ) : 'Save Changes'}
                         </Button>
                     </Grid>
                 </Grid>

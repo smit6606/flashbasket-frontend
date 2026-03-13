@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
 
 interface User {
   id: number;
@@ -18,6 +19,7 @@ interface AuthContextType {
   loading: boolean;
   login: (data: { token: string; user: User }) => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -68,11 +70,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    toast.info('Logged Out');
     router.push('/login');
   };
 
+  const refreshUser = async () => {
+    try {
+      const res = await api.get('/auth/profile');
+      const updatedUser = res.data;
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    } catch (err) {
+      console.error("Failed to refresh user", err);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

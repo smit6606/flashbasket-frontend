@@ -26,7 +26,7 @@ export default function OrderSuccessPage() {
                 sx={{
                     p: { xs: 4, md: 8 },
                     textAlign: 'center',
-                    borderRadius: 4,
+                    borderRadius: '32px',
                     border: '1px solid #f1f5f9',
                     boxShadow: '0 10px 40px rgba(0,0,0,0.03)',
                     bgcolor: 'white',
@@ -58,7 +58,7 @@ export default function OrderSuccessPage() {
                     Your lightning-fast delivery is being prepared. Our delivery partner will pick it up shortly!
                 </Typography>
 
-                <Paper elevation={0} sx={{ bgcolor: '#f8fafc', p: 4, borderRadius: 3, mb: 6, textAlign: 'left' }}>
+                <Paper elevation={0} sx={{ bgcolor: '#f8fafc', p: 4, borderRadius: '16px', mb: 6, textAlign: 'left' }}>
                     <Typography variant="subtitle2" sx={{ color: 'text.secondary', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', mb: 2 }}>
                         What happens next?
                     </Typography>
@@ -92,7 +92,7 @@ export default function OrderSuccessPage() {
                             sx={{
                                 py: 2,
                                 fontWeight: 800,
-                                borderRadius: 3,
+                                borderRadius: '16px',
                                 color: 'slate.900',
                                 borderColor: 'slate.200',
                                 '&:hover': { borderColor: 'slate.900', bgcolor: 'slate.50' }
@@ -111,7 +111,7 @@ export default function OrderSuccessPage() {
                             sx={{
                                 py: 2,
                                 fontWeight: 800,
-                                borderRadius: 3,
+                                borderRadius: '16px',
                                 bgcolor: 'primary.main',
                                 color: 'white',
                                 boxShadow: '0 8px 20px rgba(12, 131, 31, 0.2)',

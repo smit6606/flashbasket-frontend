@@ -32,6 +32,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
+import { toast } from 'react-toastify';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -155,6 +156,7 @@ export default function RegisterPage() {
     }
 
     try {
+      setLoading(true);
       await api.post('/auth/register', payload);
       const loginRes = await api.post('/auth/login', {
         identifier: formData.email,
@@ -162,8 +164,11 @@ export default function RegisterPage() {
         role: role
       });
       login(loginRes.data);
+      toast.success(`Welcome, ${formData.user_name}!`);
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
+      const msg = err.response?.data?.message || 'Registration failed';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -178,7 +183,7 @@ export default function RegisterPage() {
 
   return (
     <Container maxWidth="xl" sx={{ py: { xs: 4, md: 8 }, display: 'flex', flexGrow: 1 }}>
-      <Grid container component="main" sx={{ width: '100%', minHeight: '75vh', borderRadius: 6, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.08)', border: '1px solid #f1f5f9' }}>
+      <Grid container component="main" sx={{ width: '100%', minHeight: '75vh', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.08)', border: '1px solid #f1f5f9' }}>
       <Grid
         size={{ xs: 0, sm: 4, md: 6 }}
         sx={{
@@ -216,7 +221,7 @@ export default function RegisterPage() {
             </Typography>
           </Box>
 
-          {error && <Alert severity="error" sx={{ mb: 4, borderRadius: 3, fontWeight: 700 }}>{error}</Alert>}
+          {/* Toasts handle feedback, removed static alert for cleaner UI */}
 
           <Box component="form" onSubmit={handleSubmit} noValidate>
             <Grid container spacing={3}>
@@ -460,17 +465,13 @@ export default function RegisterPage() {
                   type="submit"
                   fullWidth
                   variant="contained"
-                  disabled={loading}
-                  sx={{
-                    py: 2,
-                    mt: 2,
-                    borderRadius: 4,
-                    fontWeight: 900,
-                    fontSize: '1rem',
-                    boxShadow: '0 8px 24px rgba(12, 131, 31, 0.2)'
-                  }}
                 >
-                  {loading ? <CircularProgress size={24} color="inherit" /> : 'Create Account'}
+                  {loading ? (
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <CircularProgress size={20} color="inherit" />
+                      <Typography variant="body1" sx={{ fontWeight: 900 }}>Creating Account...</Typography>
+                    </Stack>
+                  ) : 'Create Account'}
                 </Button>
               </Grid>
             </Grid>

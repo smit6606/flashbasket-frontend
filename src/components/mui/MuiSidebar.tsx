@@ -23,6 +23,7 @@ import {
     ShoppingCart as OrdersIcon,
     Category as CategoryIcon,
     Settings as SettingsIcon,
+    Home as HomeIcon,
     Map as DeliveryIcon,
     AccountBalanceWallet as EarningsIcon,
 } from '@mui/icons-material';
@@ -44,15 +45,20 @@ export default function MuiSidebar({ mobileOpen, onClose }: SidebarProps) {
 
     const menuItems = {
         admin: [
+            { name: 'Public Home', path: '/', icon: <HomeIcon /> },
             { name: 'Dashboard', path: '/admin', icon: <DashboardIcon /> },
-            { name: 'Manage Orders', path: '/admin/orders', icon: <OrdersIcon /> },
             { name: 'Manage Users', path: '/admin/users', icon: <PeopleIcon /> },
-            { name: 'Store Requests', path: '/admin/sellers', icon: <StoreIcon /> },
-            { name: 'Categories', path: '/admin/categories', icon: <CategoryIcon /> },
-            { name: 'Global Analytics', path: '/admin/analytics', icon: <AnalyticsIcon /> },
-            { name: 'System Settings', path: '/admin/settings', icon: <SettingsIcon /> },
+            { name: 'Manage Categories', path: '/admin/categories', icon: <CategoryIcon /> },
+            { name: 'Manage Subcategories', path: '/admin/subcategories', icon: <CategoryIcon /> },
+            { name: 'Manage Products', path: '/admin/products', icon: <InventoryIcon /> },
+            { name: 'Manage Orders', path: '/admin/orders', icon: <OrdersIcon /> },
+            { name: 'Manage Sellers', path: '/admin/sellers', icon: <StoreIcon /> },
+            { name: 'Manage Delivery', path: '/admin/delivery', icon: <DeliveryIcon /> },
+            { name: 'Reports', path: '/admin/analytics', icon: <AnalyticsIcon /> },
+            { name: 'Settings', path: '/admin/settings', icon: <SettingsIcon /> },
         ],
         seller: [
+            { name: 'Public Home', path: '/', icon: <HomeIcon /> },
             { name: 'Market Overview', path: '/seller', icon: <DashboardIcon /> },
             { name: 'Categories', path: '/seller/categories', icon: <CategoryIcon /> },
             { name: 'Subcategories', path: '/seller/subcategories', icon: <CategoryIcon /> },
@@ -62,11 +68,13 @@ export default function MuiSidebar({ mobileOpen, onClose }: SidebarProps) {
             { name: 'Store Account', path: '/seller/profile', icon: <SettingsIcon /> },
         ],
         delivery: [
+            { name: 'Public Home', path: '/', icon: <HomeIcon /> },
             { name: 'Driver Dashboard', path: '/delivery', icon: <DeliveryIcon /> },
             { name: 'Active Deliveries', path: '/delivery/trips', icon: <OrdersIcon /> },
             { name: 'Earning Ledger', path: '/delivery/earnings', icon: <EarningsIcon /> },
         ],
         user: [
+            { name: 'Public Home', path: '/', icon: <HomeIcon /> },
             { name: 'Overview', path: '/user/dashboard', icon: <DashboardIcon /> },
             { name: 'Order History', path: '/orders', icon: <OrdersIcon /> },
             { name: 'Edit Profile', path: '/user/profile', icon: <SettingsIcon /> },
@@ -100,7 +108,7 @@ export default function MuiSidebar({ mobileOpen, onClose }: SidebarProps) {
                         color: 'white',
                         px: 1.5,
                         py: 1,
-                        borderRadius: 2,
+                        borderRadius: '10px',
                         fontSize: '1.2rem',
                         fontWeight: 900,
                         boxShadow: '0 4px 12px rgba(12, 131, 31, 0.4)',
@@ -133,7 +141,7 @@ export default function MuiSidebar({ mobileOpen, onClose }: SidebarProps) {
                                     href={link.path}
                                     onClick={onClose}
                                     sx={{
-                                        borderRadius: 3,
+                                        borderRadius: '14px',
                                         mb: 0.5,
                                         bgcolor: isActive ? 'primary.main' : 'transparent',
                                         '&:hover': {
@@ -162,7 +170,10 @@ export default function MuiSidebar({ mobileOpen, onClose }: SidebarProps) {
             {/* Sidebar Footer (User Info) */}
             <Box sx={{ p: 3, borderTop: '1px solid rgba(255,255,255,0.05)', bgcolor: 'rgba(15, 23, 42, 0.4)' }}>
                 <Stack direction="row" spacing={2} alignItems="center">
-                    <Avatar sx={{ bgcolor: 'primary.dark', fontWeight: 800, fontSize: '0.9rem' }}>
+                    <Avatar 
+                        src={user?.profileImage}
+                        sx={{ bgcolor: 'primary.dark', fontWeight: 800, fontSize: '0.9rem' }}
+                    >
                         {user?.user_name?.charAt(0).toUpperCase() || 'A'}
                     </Avatar>
                     <Box sx={{ overflow: 'hidden' }}>

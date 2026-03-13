@@ -15,6 +15,7 @@ import {
     Divider,
     IconButton,
     Alert,
+    CircularProgress,
 } from '@mui/material';
 import {
     ArrowBack as BackIcon,
@@ -44,15 +45,17 @@ export default function AddProductPage() {
     const [imageUrls, setImageUrls] = useState<string[]>([]);
 
     // Derived state for the subcategories dropdown based on selected category
-    const activeSubcategories = categories.find(c => c.id.toString() === formData.categoryId)?.SubCategories || [];
+    const activeSubcategories = Array.isArray(categories) 
+        ? (categories.find(c => c.id.toString() === formData.categoryId)?.SubCategories || [])
+        : [];
 
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const res = await api.get('/categories');
-                setCategories(res.data);
+                const res = await api.get('/categories?limit=100'); // Get more for dropdown
+                setCategories(res.data.items || []);
             } catch (err) {
-                console.error('Failed to load categories');
+                console.error('Failed to load categories', err);
             }
         };
         fetchCategories();
@@ -98,7 +101,7 @@ export default function AddProductPage() {
             });
 
             await api.post('/seller/products', submitData);
-            toast.success('Product added successfully!');
+            toast.success('Product Added');
             router.push('/seller/products');
         } catch (err: any) {
             toast.error(err.message || 'Failed to add product');
@@ -309,7 +312,12 @@ export default function AddProductPage() {
                             disabled={loading}
                             sx={{ py: 2, borderRadius: 3, fontWeight: 900, boxShadow: '0 8px 24px rgba(12, 131, 31, 0.2)' }}
                         >
-                            {loading ? 'Publishing...' : 'Publish Product'}
+                            {loading ? (
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                    <CircularProgress size={20} color="inherit" />
+                                    <Typography variant="body2" sx={{ fontWeight: 900 }}>Publishing...</Typography>
+                                </Stack>
+                            ) : 'Publish Product'}
                         </Button>
                     </Grid>
                 </Grid>

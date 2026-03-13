@@ -31,6 +31,7 @@ import {
   CheckCircleOutline as CheckIcon,
   ExpandMore as ExpandMoreIcon,
   MyLocation as LocationIcon,
+  FiberManualRecord as DotIcon,
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import ProductCard from '@/components/mui/ProductCard';
@@ -51,368 +52,416 @@ interface Product {
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string; icon: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [catLoading, setCatLoading] = useState(true);
   const [expanded, setExpanded] = useState<number | false>(false);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/products');
-        setProducts(response.data);
+        const [prodRes, catRes] = await Promise.all([
+          api.get('/products?limit=20'),
+          api.get('/categories?limit=50')
+        ]);
+        setProducts(prodRes.data.items || []);
+        setCategories(catRes.data.items || []);
       } catch (err) {
-        console.error('Failed to fetch products', err);
+        console.error('Failed to fetch data', err);
       } finally {
         setLoading(false);
+        setCatLoading(false);
       }
     };
-    fetchProducts();
+    fetchData();
   }, []);
 
-  const categories = [
-    { name: 'Vegetables', icon: '🥕', color: '#E8F5E9' },
-    { name: 'Fruits', icon: '🍎', color: '#FFF3E0' },
-    { name: 'Dairy & Bread', icon: '🍞', color: '#E3F2FD' },
-    { name: 'Snacks', icon: '🍪', color: '#FCE4EC' },
-    { name: 'Beverages', icon: '🥤', color: '#F3E5F5' },
-    { name: 'Meat', icon: '🥩', color: '#EFEBE9' },
-    { name: 'Cleaning', icon: '🧴', color: '#F1F8E9' },
-    { name: 'Pharmacy', icon: '⚕️', color: '#FFEBEE' },
-  ];
+  const getCategoryImage = (name: string) => {
+    const lookupName = name.toLowerCase();
+    if (lookupName.includes('grocery')) return 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=300';
+    if (lookupName.includes('beauty')) return 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=300';
+    if (lookupName.includes('elect')) return 'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&q=80&w=300';
+    if (lookupName.includes('home') || lookupName.includes('kitchen')) return 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&q=80&w=300';
+    if (lookupName.includes('toy')) return 'https://images.unsplash.com/photo-1558060370-d644479cb6f7?auto=format&fit=crop&q=80&w=300';
+    if (lookupName.includes('snack')) return 'https://images.unsplash.com/photo-1599490659223-23df624860b0?auto=format&fit=crop&q=80&w=300';
+    if (lookupName.includes('dairy')) return 'https://images.unsplash.com/photo-1550583724-1277f3134183?auto=format&fit=crop&q=80&w=300';
+    if (lookupName.includes('fruit') || lookupName.includes('veg')) return 'https://images.unsplash.com/photo-1610832958506-aa563384269d?auto=format&fit=crop&q=80&w=300';
+    if (lookupName.includes('bike')) return 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=300';
+    if (lookupName.includes('car')) return 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=300';
+    if (lookupName.includes('shoe')) return 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=300';
+    
+    return 'https://images.unsplash.com/photo-1531230832717-48ef662bc2b4?auto=format&fit=crop&q=80&w=300';
+  };
 
   return (
-    <Container maxWidth="xl" sx={{ pt: { xs: 2, md: 5 }, pb: 8 }}>
-      <Box sx={{ py: 1 }}>
-        {/* Hero / Banner Section */}
-      <Paper
-        elevation={0}
-        sx={{
-          mb: 10,
-          borderRadius: 10,
+    <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', pb: 10 }}>
+      {/* Hero Section - Layered & Modern */}
+      <Box 
+        sx={{ 
+          pt: { xs: 4, md: 8 }, 
+          pb: { xs: 8, md: 12 }, 
+          bgcolor: 'white', 
+          borderBottom: '1px solid rgba(0,0,0,0.05)',
           overflow: 'hidden',
-          bgcolor: '#0C831F',
-          backgroundImage: 'linear-gradient(135deg, #0C831F 0%, #064e3b 100%)',
-          position: 'relative',
-          minHeight: { xs: 350, md: 500 },
-          display: 'flex',
-          alignItems: 'center',
-          border: '1px solid rgba(255,255,255,0.1)'
+          position: 'relative'
         }}
       >
-        {/* Abstract shapes for premium feel */}
-        <Box sx={{ position: 'absolute', right: '-10%', top: '-20%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)' }} />
-        <Box sx={{ position: 'absolute', left: '20%', bottom: '-10%', width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)' }} />
-
-        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-          <Grid container spacing={4} alignItems="center">
-            <Grid size={{ xs: 12, md: 7 }}>
-              <Stack spacing={4} alignItems="flex-start">
-                <Chip
-                  icon={<FlashIcon sx={{ color: '#FFD700 !important', fontSize: 16 }} />}
-                  label="DELIVERED IN 11 MINUTES"
-                  sx={{
-                    bgcolor: 'rgba(255,255,255,0.1)',
-                    color: 'white',
-                    fontWeight: 900,
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    px: 1
-                  }}
+        <Container maxWidth="xl">
+          <Grid container spacing={6} alignItems="center">
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Stack spacing={3} alignItems={{ xs: 'center', md: 'flex-start' }} textAlign={{ xs: 'center', md: 'left' }}>
+                <Chip 
+                  label="11-MINUTE DELIVERY" 
+                  color="primary"
+                  icon={<FlashIcon sx={{ fontSize: '1rem !important' }} />}
+                  sx={{ 
+                    fontWeight: 900, 
+                    px: 1, 
+                    height: 32, 
+                    borderRadius: 1.5,
+                    boxShadow: '0 4px 12px rgba(12, 131, 31, 0.2)' 
+                  }} 
                 />
-
-                <Typography variant="h1" sx={{
-                  color: 'white',
-                  fontSize: { xs: '2.5rem', md: '4.5rem' },
-                  lineHeight: 1,
-                  fontWeight: 900,
-                  letterSpacing: '-0.03em'
-                }}>
-                  Fresh items <br /> directly from <br /> <span style={{ color: '#FFD700' }}>Local Shops.</span>
+                
+                <Typography variant="h1" sx={{ fontSize: { xs: '2.5rem', sm: '3.5rem', lg: '4.5rem' }, lineHeight: 1 }}>
+                  Get anything in <br />
+                  <span style={{ color: '#0C831F' }}>Flash speed.</span>
+                </Typography>
+                
+                <Typography variant="h5" sx={{ color: 'text.secondary', maxWidth: 500, fontWeight: 600, lineHeight: 1.6 }}>
+                  Order fresh groceries, daily essentials, and pharmacy items from your favorite local shops.
                 </Typography>
 
-                <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, maxWidth: 500 }}>
-                  Why wait for hours? Get your groceries, essentials and more delivered from your favorite neighborhood stores in minutes.
-                </Typography>
-
-                <Button
-                  variant="contained"
-                  size="large"
-                  component={Link}
-                  href="/categories/Vegetables"
-                  sx={{
-                    bgcolor: 'white',
-                    color: '#0C831F',
-                    fontWeight: 900,
-                    px: 6,
-                    py: 2.5,
-                    fontSize: '1.1rem',
-                    borderRadius: 5,
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
-                    '&:hover': { bgcolor: '#f8fafc', transform: 'translateY(-2px)' },
-                    transition: 'all 0.3s'
-                  }}
-                >
-                  Start Shopping
-                </Button>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ pt: 2, width: { xs: '100%', sm: 'auto' } }}>
+                  <Button 
+                    variant="contained" 
+                    size="large" 
+                    component={Link} 
+                    href="/products"
+                    sx={{ py: 2, px: 5, borderRadius: 1.5, fontSize: '1.1rem' }}
+                  >
+                    Start Shopping
+                  </Button>
+                  <Button 
+                    variant="outlined" 
+                    size="large" 
+                    component={Link} 
+                    href="/sellers"
+                    startIcon={<LocationIcon />}
+                    sx={{ py: 2, px: 5, borderRadius: 1.5, fontSize: '1.1rem', borderColor: '#e2e8f0', color: 'text.primary', '&:hover': { bgcolor: 'primary.light' } }}
+                  >
+                    Stores Near Me
+                  </Button>
+                </Stack>
               </Stack>
             </Grid>
-
-            <Grid size={{ xs: 0, md: 5 }} sx={{ display: { xs: 'none', md: 'block' }, position: 'relative' }}>
-              <Box sx={{
-                width: '120%',
-                height: 500,
-                borderRadius: 10,
-                overflow: 'hidden',
-                transform: 'rotate(2deg)',
-                boxShadow: '0 30px 60px rgba(0,0,0,0.3)',
-                border: '8px solid white'
-              }}>
-                <img
-                  src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=1000"
-                  alt="FlashBasket Fresh"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
+            
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box sx={{ position: 'relative' }}>
+                <Box sx={{ 
+                  borderRadius: 5, 
+                  overflow: 'hidden', 
+                  boxShadow: '0 40px 80px rgba(0,0,0,0.1)',
+                  position: 'relative',
+                  zIndex: 2,
+                  bgcolor: '#f1f5f9'
+                }}>
+                  <img 
+                    src="/flashbasket_hero_banner_1773312465652.png" 
+                    alt="Lightning Fast Delivery" 
+                    style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }} 
+                  />
+                </Box>
+                {/* Decorative floating badges */}
+                <Paper 
+                  sx={{ 
+                    position: 'absolute', 
+                    bottom: -30, 
+                    left: -30, 
+                    p: 3, 
+                    borderRadius: 2.5, 
+                    zIndex: 3, 
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                    display: { xs: 'none', lg: 'block' }
+                  }}
+                >
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Avatar sx={{ bgcolor: 'success.main', width: 48, height: 48 }}>
+                      <CheckIcon />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h6" sx={{ fontSize: '1rem' }}>Order Delivered!</Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>9 mins ago to Mumbai Central</Typography>
+                    </Box>
+                  </Stack>
+                </Paper>
               </Box>
             </Grid>
           </Grid>
         </Container>
-      </Paper>
-
-      {/* Near You Discovery Section */}
-      <Box sx={{ mb: 12 }}>
-        <Paper elevation={0} sx={{ 
-          p: { xs: 4, md: 6 }, 
-          borderRadius: 8, 
-          bgcolor: alpha('#E8F5E9', 0.5), 
-          border: '1px solid #C8E6C9',
-          display: 'flex',
-          flexDirection: { xs: 'column', md: 'row' },
-          alignItems: 'center',
-          gap: 4,
-          justifyContent: 'space-between'
-        }}>
-          <Box>
-            <Typography variant="h4" sx={{ fontWeight: 900, color: '#0C831F', mb: 1 }}>Hungry for <span style={{ color: '#0f172a' }}>Local Freshness?</span></Typography>
-            <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 700 }}>Enable location to discover verified neighborhood stores delivering in minutes.</Typography>
-          </Box>
-          <Button 
-            variant="contained" 
-            component={Link}
-            href="/sellers"
-            startIcon={<LocationIcon />}
-            sx={{ 
-              borderRadius: 4, 
-              px: 4, 
-              py: 1.5, 
-              fontWeight: 900,
-              bgcolor: '#0C831F',
-              boxShadow: '0 10px 20px rgba(12, 131, 31, 0.2)',
-              whiteSpace: 'nowrap'
-            }}
-          >
-            Detect My Location
-          </Button>
-        </Paper>
       </Box>
 
-      {/* Categories Grid */}
-      <Box sx={{ mb: 12 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-end" sx={{ mb: 6 }}>
-          <Box>
-            <Typography variant="h3" sx={{ fontWeight: 900, letterSpacing: '-0.02em' }}>Quick <span style={{ color: '#0C831F' }}>Categories</span></Typography>
-            <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 700, mt: 1 }}>Explore our wide range of fresh collections</Typography>
-          </Box>
-          <Button component={Link} href="/categories" endIcon={<RightIcon />} sx={{ fontWeight: 900, color: 'primary.main' }}>View All</Button>
-        </Stack>
-
-        <Grid container spacing={4}>
-          {categories.map((cat, i) => (
-            <Grid size={{ xs: 3, sm: 2, md: 1.5 }} key={i}>
-              <Box
-                component={Link}
-                href={`/categories/${cat.name}`}
-                sx={{
-                  textDecoration: 'none',
+      {/* Trust Bar */}
+      <Container maxWidth="xl" sx={{ mt: -4, position: 'relative', zIndex: 10 }}>
+        <Grid container spacing={3}>
+          {[
+            { title: 'Free Delivery', sub: 'On orders over ₹99', icon: <TagIcon />, color: '#E8F5E9' },
+            { title: 'Local Freshness', sub: 'Daily curated picks', icon: <FlashIcon />, color: '#FFF3E0' },
+            { title: 'Multi-Shop Cart', sub: 'One order, many sellers', icon: <StoreIcon />, color: '#E3F2FD' },
+          ].map((item, i) => (
+            <Grid size={{ xs: 12, md: 4 }} key={i}>
+              <Paper 
+                elevation={0} 
+                sx={{ 
+                  p: 3, 
+                  borderRadius: 2.5, 
+                  bgcolor: 'white', 
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+                  border: '1px solid rgba(0,0,0,0.05)',
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 2,
-                  cursor: 'pointer',
-                  '&:hover': {
-                    '& .cat-icon': { transform: 'translateY(-8px) scale(1.05)', boxShadow: `0 20px 30px ${alpha(cat.color, 0.4)}` }
-                  }
+                  gap: 3
                 }}
               >
-                <Box
-                  className="cat-icon"
-                  sx={{
-                    width: '100%',
-                    aspectRatio: '1/1',
-                    bgcolor: cat.color,
-                    borderRadius: 8,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: { xs: '2rem', md: '3rem' },
-                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                    border: '1px solid transparent',
-                    boxShadow: '0 8px 15px rgba(0,0,0,0.03)'
-                  }}
-                >
-                  {cat.icon}
+                <Avatar sx={{ bgcolor: item.color, color: 'text.primary', width: 60, height: 60, borderRadius: 1.5 }}>
+                  {React.cloneElement(item.icon as React.ReactElement<any>, { sx: { fontSize: 30, color: item.color === '#E8F5E9' ? '#0C831F' : 'inherit' } })}
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" sx={{ fontSize: '1.2rem' }}>{item.title}</Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>{item.sub}</Typography>
                 </Box>
-                <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.primary', textAlign: 'center', fontSize: '0.85rem' }}>
-                  {cat.name}
-                </Typography>
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
-
-      {/* Featured Products */}
-      <Box sx={{ mb: 12 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-end" sx={{ mb: 6 }}>
-          <Box>
-            <Typography variant="h3" sx={{ fontWeight: 900, letterSpacing: '-0.02em' }}>Flash <span style={{ color: '#0C831F' }}>Bestsellers</span></Typography>
-            <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 700, mt: 1 }}>Highest rated items by our community</Typography>
-          </Box>
-          <Button component={Link} href="/products" endIcon={<RightIcon />} sx={{ fontWeight: 900 }}>See All Products</Button>
-        </Stack>
-
-        <Grid container spacing={4}>
-          {loading ? (
-            [...Array(10)].map((_, i) => (
-              <Grid size={{ xs: 12, sm: 6, md: 3, lg: 2.4 }} key={i}>
-                <Skeleton variant="rectangular" height={320} sx={{ borderRadius: 8 }} />
-              </Grid>
-            ))
-          ) : (
-            products.slice(0, 10).map((product) => (
-              <Grid size={{ xs: 12, sm: 6, md: 3, lg: 2.4 }} key={product.id}>
-                <ProductCard product={product} />
-              </Grid>
-            ))
-          )}
-        </Grid>
-      </Box>
-
-      {/* Customer Reviews Section */}
-      <Box sx={{ mb: 12 }}>
-        <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, letterSpacing: '-0.02em', textAlign: 'center' }}>
-          See What Our Customers <span style={{ color: '#0C831F' }}>Are Saying</span>
-        </Typography>
-        <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mb: 6, textAlign: 'center' }}>
-          Real feedback from verified shoppers
-        </Typography>
-        <Grid container spacing={4}>
-          {[
-            { name: "Rahul Sharma", text: "Unbelievably fast delivery. Tomatoes were fresh as promised. The app is so smooth. Will definitely be ordering my groceries from here every day!", rating: 5, avatar: "https://randomuser.me/api/portraits/men/32.jpg" },
-            { name: "Priya Desai", text: "Great variety of local shops. It feels like buying directly from the market. Love the 11 minutes delivery promise. Saves me so much time in the mornings.", rating: 5, avatar: "https://randomuser.me/api/portraits/women/44.jpg" },
-            { name: "Amit Singh", text: "The premium membership is an absolute steal! Free delivery pays for itself in less than a week. Highly recommended for people who order frequently.", rating: 5, avatar: "https://randomuser.me/api/portraits/men/45.jpg" }
-          ].map((review, i) => (
-            <Grid size={{ xs: 12, md: 4 }} key={i}>
-              <Paper elevation={0} sx={{ p: 4, borderRadius: 5, border: '1px solid #f1f5f9', boxShadow: '0 10px 30px rgba(0,0,0,0.02)', textAlign: 'center' }}>
-                <Avatar src={review.avatar} alt={review.name} sx={{ width: 72, height: 72, mx: 'auto', mb: 2, boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }} />
-                <Rating value={review.rating} readOnly sx={{ mb: 2, color: '#FFD700' }} />
-                <Typography variant="body1" sx={{ fontWeight: 700, color: 'slate.800', fontStyle: 'italic', mb: 2 }}>
-                  "{review.text}"
-                </Typography>
-                <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase' }}>
-                  {review.name}
-                </Typography>
               </Paper>
             </Grid>
           ))}
         </Grid>
-      </Box>
+      </Container>
 
-      {/* Premium Membership Section */}
-      <Box sx={{ mb: 12 }}>
-        <Paper elevation={0} sx={{ p: { xs: 4, md: 8 }, borderRadius: 8, bgcolor: '#0f172a', color: 'white', overflow: 'hidden', position: 'relative' }}>
-          <Box sx={{ position: 'absolute', top: '-20%', right: '-10%', width: 300, height: 300, bgcolor: 'primary.main', filter: 'blur(100px)', opacity: 0.3, borderRadius: '50%' }} />
+      {/* Main Content Area */}
+      <Container maxWidth="xl" sx={{ mt: 10 }}>
+        
+        {/* Categories Section */}
+        <Box sx={{ mb: 12 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 6 }}>
+            <Box>
+              <Typography variant="h3">Shop by <span style={{ color: '#0C831F' }}>Category</span></Typography>
+              <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1 }}>Fresh options for your every need</Typography>
+            </Box>
+            <Button component={Link} href="/categories" sx={{ fontWeight: 900, color: 'primary.main' }}>View All</Button>
+          </Stack>
+
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              gap: 3, 
+              overflowX: 'auto', 
+              pb: 4,
+              pt: 1,
+              px: { xs: 2, md: 1 },
+              mx: { xs: -2, md: -1 },
+              '&::-webkit-scrollbar': { display: 'none' },
+              msOverflowStyle: 'none',
+              scrollbarWidth: 'none'
+            }}
+          >
+            {catLoading ? (
+              [...Array(8)].map((_, i) => (
+                <Box key={i} sx={{ minWidth: { xs: 140, md: 180 }, flexShrink: 0 }}>
+                  <Skeleton variant="rounded" height={160} sx={{ borderRadius: 1.5 }} />
+                </Box>
+              ))
+            ) : (
+              categories.map((cat) => (
+                <Box key={cat.id} sx={{ minWidth: { xs: 140, md: 180 }, flexShrink: 0 }}>
+                  <Card 
+                    component={Link} 
+                    href={`/categories/${cat.id}`}
+                    sx={{ 
+                      textAlign: 'center', 
+                      bgcolor: 'white',
+                      textDecoration: 'none',
+                      borderRadius: 4,
+                      border: '1px solid #f1f5f9',
+                      transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                      display: 'block',
+                      overflow: 'hidden',
+                      position: 'relative',
+                      '&:hover': { 
+                        transform: 'translateY(-12px)', 
+                        boxShadow: '0 30px 60px -15px rgba(12, 131, 31, 0.15)', 
+                        borderColor: '#0C831F',
+                        zIndex: 10,
+                        '& .cat-img': { transform: 'scale(1.18)' },
+                        '& .cat-label-text': { color: '#0C831F' },
+                        '& .active-indicator': { width: '40px' }
+                      }
+                    }}
+                  >
+                    <Box 
+                      sx={{ 
+                        width: '100%', 
+                        height: 140, 
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: 'white',
+                        p: 1.5,
+                        overflow: 'hidden'
+                      }}
+                    >
+                      <img 
+                        className="cat-img"
+                        src={getCategoryImage(cat.name)} 
+                        alt={cat.name}
+                        style={{ 
+                          width: '85%', 
+                          height: '85%', 
+                          objectFit: 'contain',
+                          transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                        }}
+                      />
+                    </Box>
+                    <Box className="cat-label" sx={{ p: 2, bgcolor: 'white', borderTop: '1px solid #f1f5f9', position: 'relative', transition: 'all 0.3s' }}>
+                      <Typography 
+                        className="cat-label-text"
+                        variant="subtitle2" 
+                        sx={{ 
+                          fontWeight: 900, 
+                          color: '#1e293b', 
+                          overflow: 'hidden', 
+                          textOverflow: 'ellipsis', 
+                          whiteSpace: 'nowrap',
+                          transition: 'color 0.3s ease'
+                        }}
+                      >
+                        {cat.name}
+                      </Typography>
+                      <Box 
+                        className="active-indicator" 
+                        sx={{ 
+                          position: 'absolute', 
+                          bottom: 0, 
+                          left: '50%', 
+                          transform: 'translateX(-50%)', 
+                          height: 3, 
+                          width: 0, 
+                          bgcolor: '#0C831F', 
+                          borderRadius: '3px 3px 0 0',
+                          transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)' 
+                        }} 
+                      />
+                    </Box>
+                  </Card>
+                </Box>
+              ))
+            )}
+          </Box>
+        </Box>
+
+        {/* Featured Products */}
+        <Box sx={{ mb: 12 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 6 }}>
+            <Box>
+              <Typography variant="h3">Trending <span style={{ color: '#0C831F' }}>Now</span></Typography>
+              <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1 }}>Top picks from neighborhood stores</Typography>
+            </Box>
+            <Button component={Link} href="/products" sx={{ fontWeight: 900 }}>See Everything</Button>
+          </Stack>
+
+          <Grid container spacing={3}>
+            {loading ? (
+              [...Array(10)].map((_, i) => (
+                <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2.4 }} key={i}>
+                  <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 1.5 }} />
+                </Grid>
+              ))
+            ) : (
+              products.slice(0, 10).map((product) => (
+                <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2.4 }} key={product.id}>
+                  <ProductCard product={product} />
+                </Grid>
+              ))
+            )}
+          </Grid>
+        </Box>
+
+        {/* Premium Banner */}
+        <Paper 
+          sx={{ 
+            p: { xs: 4, md: 8 }, 
+            borderRadius: 5, 
+            bgcolor: '#0f172a', 
+            color: 'white', 
+            position: 'relative', 
+            overflow: 'hidden',
+            mb: 12
+          }}
+        >
+          <Box sx={{ position: 'absolute', top: '-10%', right: '-10%', width: 400, height: 400, bgcolor: 'primary.main', opacity: 0.2, filter: 'blur(100px)', borderRadius: '50%' }} />
           <Grid container spacing={6} alignItems="center">
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Typography variant="h3" sx={{ fontWeight: 900, mb: 2 }}>
-                The Affordable <span style={{ color: '#FFD700' }}>Unfair Advantage</span>
+            <Grid size={{ xs: 12, md: 7 }}>
+              <Typography variant="h2" sx={{ mb: 2 }}>Flash <span style={{ color: '#FFD700' }}>Premium</span></Typography>
+              <Typography variant="h5" sx={{ color: 'rgba(255,255,255,0.7)', mb: 4, maxWidth: 500 }}>
+                Join the ultimate shopping circle. Get zero delivery fees, priority support and member-only pricing.
               </Typography>
-              <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, mb: 4 }}>
-                Join FlashPremium and never pay delivery fees again. Plus, get priority support and exclusive discounts.
-              </Typography>
-              <Stack spacing={2} sx={{ mb: 4 }}>
-                {['Unlimited Free Delivery', 'Faster Delivery Priority', 'Exclusive Member Discounts', '24/7 Priority Support'].map((benefit, i) => (
-                  <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <CheckIcon sx={{ color: '#10b981' }} />
-                    <Typography variant="body1" sx={{ fontWeight: 700 }}>{benefit}</Typography>
-                  </Box>
-                ))}
+              <Stack direction="row" spacing={3} sx={{ mb: 5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <CheckIcon sx={{ color: '#10b981' }} />
+                  <Typography variant="body1" sx={{ fontWeight: 700 }}>Free Delivery</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <CheckIcon sx={{ color: '#10b981' }} />
+                  <Typography variant="body1" sx={{ fontWeight: 700 }}>Priority Slot</Typography>
+                </Box>
               </Stack>
-              <Button variant="contained" sx={{ bgcolor: '#FFD700', color: '#0f172a', fontWeight: 900, px: 5, py: 1.5, borderRadius: 3, '&:hover': { bgcolor: '#facc15' } }}>
-                Join FlashPremium - ₹299/mo
+              <Button variant="contained" sx={{ bgcolor: '#FFD700', color: '#0f172a', py: 2, px: 6, borderRadius: 1.5, fontSize: '1.1rem', '&:hover': { bgcolor: '#facc15' } }}>
+                Subscribe for ₹299/year
               </Button>
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Paper elevation={0} sx={{ p: 4, borderRadius: 5, bgcolor: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <Typography variant="h5" sx={{ fontWeight: 900, mb: 3, textAlign: 'center' }}>Plan Comparison</Typography>
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 4 }}>
-                    <Typography variant="subtitle2" sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 800 }}>Feature</Typography>
-                  </Grid>
-                  <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}>
-                    <Typography variant="subtitle2" sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 800 }}>Free</Typography>
-                  </Grid>
-                  <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}>
-                    <Typography variant="subtitle2" sx={{ color: '#FFD700', fontWeight: 900 }}>Premium</Typography>
-                  </Grid>
-                  <Grid size={{ xs: 12 }}><Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} /></Grid>
-                  
-                  {/* Rows */}
-                  <Grid size={{ xs: 4 }}><Typography variant="body2" sx={{ fontWeight: 700, color: 'white' }}>Delivery Fee</Typography></Grid>
-                  <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}><Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>₹25</Typography></Grid>
-                  <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}><Typography variant="body2" sx={{ fontWeight: 900, color: '#10b981' }}>FREE</Typography></Grid>
-
-                  <Grid size={{ xs: 4 }}><Typography variant="body2" sx={{ fontWeight: 700, color: 'white' }}>Priority Support</Typography></Grid>
-                  <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}><Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>No</Typography></Grid>
-                  <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}><Typography variant="body2" sx={{ fontWeight: 900, color: '#10b981' }}>Yes</Typography></Grid>
-                </Grid>
-              </Paper>
+            <Grid size={{ xs: 12, md: 5 }}>
+              <Box sx={{ p: 4, bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 2.5, border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' }}>
+                <Typography variant="h6" sx={{ color: '#FFD700', mb: 3 }}>MOST POPULAR PLAN</Typography>
+                <Stack spacing={2}>
+                  {[
+                    { label: 'Standard Order', val: '₹40 Delivery' },
+                    { label: 'Flash Premium', val: 'FREE Delivery', highlight: true },
+                    { label: 'Order Limit', val: 'Unlimited' },
+                    { label: 'Support', val: '24/7 Priority' },
+                  ].map((row, i) => (
+                    <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.05)' : 'none', pb: i < 3 ? 2 : 0 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: 'rgba(255,255,255,0.6)' }}>{row.label}</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 900, color: row.highlight ? '#10b981' : 'white' }}>{row.val}</Typography>
+                    </Box>
+                  ))}
+                </Stack>
+              </Box>
             </Grid>
           </Grid>
         </Paper>
-      </Box>
 
-      {/* FAQ Section */}
-      <Box sx={{ mb: 12 }}>
-        <Typography variant="h3" sx={{ fontWeight: 900, mb: 6, textAlign: 'center', letterSpacing: '-0.02em' }}>
-          Frequently Asked <span style={{ color: '#0C831F' }}>Questions</span>
-        </Typography>
-        <Box sx={{ width: '100%' }}>
-          {[
-            { q: "How long does delivery take?", a: "We guarantee delivery within 11 minutes for our primary zones. Deliveries outside these zones may take up to 25 minutes depending on distance and traffic." },
-            { q: "How can I track my order?", a: "Once your order is confirmed, you will see a live tracking screen on your app and receive SMS updates at each step." },
-            { q: "Can I cancel my order?", a: "You can cancel your order within 60 seconds of placing it. Once it enters the 'Preparing' phase, cancellation is not possible." },
-            { q: "What payment methods are supported?", a: "We support Credit/Debit Cards, UPI, NetBanking, and Cash on Delivery (COD)." },
-          ].map((faq, i) => (
-            <Accordion 
-              key={i} 
-              expanded={expanded === i}
-              onChange={(_, isExpanded) => setExpanded(isExpanded ? i : false)}
-              elevation={0} 
-              sx={{ mb: 2, borderRadius: 3, border: '1px solid #f1f5f9', '&:before': { display: 'none' } }}
-            >
-              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ fontSize: '1.75rem' }}/>} sx={{ p: { xs: 3, md: 4 } }}>
-                <Typography variant="h6" sx={{ fontWeight: 800, fontSize: { xs: '1.05rem', md: '1.2rem' } }}>{faq.q}</Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ px: { xs: 3, md: 4 }, pb: { xs: 3, md: 4 }, pt: 0 }}>
-                <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: { xs: '0.95rem', md: '1.05rem' }, lineHeight: 1.6 }}>{faq.a}</Typography>
-              </AccordionDetails>
-            </Accordion>
-          ))}
+        {/* FAQs */}
+        <Box sx={{ mb: 12 }}>
+          <Typography variant="h3" sx={{ textAlign: 'center', mb: 8 }}>Got <span style={{ color: '#0C831F' }}>Questions?</span></Typography>
+          <Grid container spacing={3}>
+            {[
+              { q: 'Is there a minimum order value?', a: 'No, but orders above ₹99 get free delivery with Flash Premium.' },
+              { q: 'How long does 11-min delivery take?', a: 'Actually, our average delivery time is just 9 minutes in most zones!' },
+              { q: 'Can I order from multiple stores?', a: 'Yes! That\'s our specialty. One checkout, multiple shop collections.' },
+              { q: 'How do I track my order?', a: 'You can watch our "Flash Rider" live on the map after order confirmation.' },
+            ].map((faq, i) => (
+              <Grid size={{ xs: 12, md: 6 }} key={i}>
+                <Paper sx={{ p: 4, height: '100%', borderRadius: 2.5, border: '1px solid #f1f5f9', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
+                  <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <DotIcon sx={{ color: 'primary.main', fontSize: 13 }} /> {faq.q}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, lineHeight: 1.6 }}>{faq.a}</Typography>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
         </Box>
-      </Box>
 
-
+      </Container>
     </Box>
-    </Container>
   );
 }

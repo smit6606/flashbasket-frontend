@@ -41,7 +41,7 @@ export default function MuiCartItem({ item, onUpdateQuantity, onRemove }: MuiCar
             elevation={0}
             sx={{
                 p: 2.5,
-                borderRadius: 4,
+                borderRadius: 1.5,
                 border: '1px solid #f1f5f9',
                 display: 'flex',
                 gap: 3,
@@ -55,7 +55,7 @@ export default function MuiCartItem({ item, onUpdateQuantity, onRemove }: MuiCar
                     width: 90,
                     height: 90,
                     bgcolor: 'white',
-                    borderRadius: 4,
+                    borderRadius: 1,
                     p: 1.5,
                     display: 'flex',
                     alignItems: 'center',
@@ -102,7 +102,7 @@ export default function MuiCartItem({ item, onUpdateQuantity, onRemove }: MuiCar
 
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 900 }}>₹{item.price}</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 900, color: 'text.primary' }}>₹{item.price}</Typography>
                         <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.secondary', fontWeight: 700, opacity: 0.6 }}>
                             ₹{Number(item.price) + 20}
                         </Typography>
@@ -114,37 +114,49 @@ export default function MuiCartItem({ item, onUpdateQuantity, onRemove }: MuiCar
                             onClick={() => onRemove(item.id)}
                             sx={{ color: 'error.main', '&:hover': { bgcolor: alpha('#ef5350', 0.1) } }}
                         >
-                            <DeleteIcon fontSize="small" />
+                            <DeleteIcon fontSize="medium" />
                         </IconButton>
 
-                        <ButtonGroup
-                            size="small"
-                            sx={{
-                                bgcolor: 'primary.main',
-                                borderRadius: 3,
+                        <Box 
+                            sx={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                bgcolor: 'primary.main', 
+                                borderRadius: 1.5,
                                 overflow: 'hidden',
                                 boxShadow: '0 4px 12px rgba(12, 131, 31, 0.15)'
                             }}
                         >
-                            <Button
-                                onClick={() => {
-                                    if (item.quantity === 1) onRemove(item.id);
-                                    else onUpdateQuantity(item.id, item.quantity - 1);
-                                }}
-                                sx={{ color: 'white', border: 'none !important', minWidth: 32, '&:hover': { bgcolor: 'primary.dark' } }}
-                            >
-                                <RemoveIcon fontSize="small" />
-                            </Button>
-                            <Box sx={{ width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '0.85rem' }}>
+                            {item.quantity > 1 && (
+                                <Button
+                                    onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                                    sx={{ 
+                                        color: 'white', 
+                                        minWidth: 32, 
+                                        height: 32,
+                                        p: 0,
+                                        '&:hover': { bgcolor: 'primary.dark' } 
+                                    }}
+                                >
+                                    <RemoveIcon fontSize="small" />
+                                </Button>
+                            )}
+                            <Box sx={{ minWidth: 32, px: 1, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '0.85rem' }}>
                                 {item.quantity}
                             </Box>
                             <Button
                                 onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                                sx={{ color: 'white', border: 'none !important', minWidth: 32, '&:hover': { bgcolor: 'primary.dark' } }}
+                                sx={{ 
+                                    color: 'white', 
+                                    minWidth: 32, 
+                                    height: 32,
+                                    p: 0,
+                                    '&:hover': { bgcolor: 'primary.dark' } 
+                                }}
                             >
                                 <AddIcon fontSize="small" />
                             </Button>
-                        </ButtonGroup>
+                        </Box>
                     </Stack>
                 </Box>
             </Box>

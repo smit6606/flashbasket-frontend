@@ -24,6 +24,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
+import { toast } from 'react-toastify';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -57,9 +58,13 @@ export default function LoginPage() {
 
     try {
       const response = await api.post('/auth/login', formData);
+      const { user } = response.data;
       login(response.data);
+      toast.success(`Welcome, ${user.user_name}!`);
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      const msg = err.response?.data?.message || 'Invalid Credentials';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -71,7 +76,7 @@ export default function LoginPage() {
 
   return (
     <Container maxWidth="xl" sx={{ py: { xs: 4, md: 8 }, display: 'flex', flexGrow: 1 }}>
-      <Grid container component="main" sx={{ width: '100%', minHeight: '75vh', borderRadius: 6, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.08)', border: '1px solid #f1f5f9' }}>
+      <Grid container component="main" sx={{ width: '100%', minHeight: '75vh', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.08)', border: '1px solid #f1f5f9' }}>
       {/* Left Side: Image/Branding */}
       <Grid
         size={{ xs: 0, sm: 4, md: 6 }}
@@ -146,11 +151,7 @@ export default function LoginPage() {
             Please enter your details to sign in
           </Typography>
 
-          {error && (
-            <Alert severity="error" sx={{ width: '100%', mb: 3, borderRadius: 3, fontWeight: 700 }}>
-              {error}
-            </Alert>
-          )}
+          {/* Toasts handle feedback, removed static alert for cleaner UI */}
 
           <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
             <Stack spacing={3}>
@@ -228,12 +229,17 @@ export default function LoginPage() {
                 py: 2,
                 bgcolor: 'primary.main',
                 fontSize: '1rem',
-                fontWeight: 800,
-                borderRadius: 4,
+                fontWeight: 900,
+                borderRadius: '16px',
                 boxShadow: '0 8px 16px rgba(12, 131, 31, 0.2)',
               }}
             >
-              {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+              {loading ? (
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CircularProgress size={20} color="inherit" />
+                  <Typography variant="body1" sx={{ fontWeight: 900 }}>Logging in...</Typography>
+                </Stack>
+              ) : 'Sign In'}
             </Button>
 
             <Box sx={{ textAlign: 'center', mt: 2 }}>

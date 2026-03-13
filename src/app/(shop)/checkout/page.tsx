@@ -25,6 +25,7 @@ import {
     ListItem,
     ListItemText,
     ListItemAvatar,
+    alpha,
     CircularProgress,
 } from '@mui/material';
 import {
@@ -41,6 +42,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import StripePayment from '@/components/StripePayment';
 import UpiQrPayment from '@/components/UpiQrPayment';
+import { useCart } from '@/context/CartContext';
 import { toast } from 'react-toastify';
 import { QrCode as QrIcon } from '@mui/icons-material';
 
@@ -61,6 +63,7 @@ const steps = ['Shipping Address', 'Payment Method', 'Review Order'];
 
 export default function CheckoutPage() {
     const { token, loading: authLoading } = useAuth();
+    const { refreshCart } = useCart();
     const router = useRouter();
     const [activeStep, setActiveStep] = useState(0);
     const [cart, setCart] = useState<{ items: CartItem[]; subtotal: string } | null>(null);
@@ -131,7 +134,7 @@ export default function CheckoutPage() {
                 latitude: 21.1702,
                 longitude: 72.8311
             });
-            
+
             if (paymentMethod === 'stripe' && response.data?.clientSecret) {
                 setClientSecret(response.data.clientSecret);
                 return;
@@ -143,7 +146,8 @@ export default function CheckoutPage() {
                 return;
             }
 
-            toast.success('Order placed successfully!');
+            toast.success('Order Confirmed');
+            await refreshCart();
             router.push('/order-success');
         } catch (err: any) {
             toast.error(err.message || 'Failed to place order.');
@@ -171,9 +175,9 @@ export default function CheckoutPage() {
                         <Grid size={{ xs: 12 }}>
                             <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>Shipping Address & Location</Typography>
                         </Grid>
-                        
+
                         <Grid size={{ xs: 12 }}>
-                            <Paper elevation={0} sx={{ height: 300, width: '100%', borderRadius: 4, overflow: 'hidden', border: '1px solid #f1f5f9', position: 'relative' }}>
+                            <Paper elevation={0} sx={{ height: 300, width: '100%', borderRadius: 2, overflow: 'hidden', border: '1px solid #f1f5f9', position: 'relative' }}>
                                 {/* Use Google Maps API here */}
                                 <Box sx={{ width: '100%', height: '100%', bgcolor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <Stack alignItems="center" spacing={1} sx={{ opacity: 0.5 }}>
@@ -247,10 +251,10 @@ export default function CheckoutPage() {
                                             variant="outlined"
                                             sx={{
                                                 p: 3,
-                                                borderRadius: 4,
+                                                borderRadius: 1,
                                                 cursor: 'pointer',
                                                 borderColor: paymentMethod === 'stripe' ? 'primary.main' : 'divider',
-                                                bgcolor: paymentMethod === 'stripe' ? 'primary.light' : 'transparent',
+                                                bgcolor: paymentMethod === 'stripe' ? alpha('#0C831F', 0.05) : 'transparent',
                                             }}
                                             onClick={() => setPaymentMethod('stripe')}
                                         >
@@ -272,10 +276,10 @@ export default function CheckoutPage() {
                                             variant="outlined"
                                             sx={{
                                                 p: 3,
-                                                borderRadius: 4,
+                                                borderRadius: 1,
                                                 cursor: 'pointer',
                                                 borderColor: paymentMethod === 'upi' ? 'primary.main' : 'divider',
-                                                bgcolor: paymentMethod === 'upi' ? 'primary.light' : 'transparent',
+                                                bgcolor: paymentMethod === 'upi' ? alpha('#0C831F', 0.05) : 'transparent',
                                             }}
                                             onClick={() => setPaymentMethod('upi')}
                                         >
@@ -297,10 +301,10 @@ export default function CheckoutPage() {
                                             variant="outlined"
                                             sx={{
                                                 p: 3,
-                                                borderRadius: 4,
+                                                borderRadius: 1,
                                                 cursor: 'pointer',
                                                 borderColor: paymentMethod === 'cod' ? 'primary.main' : 'divider',
-                                                bgcolor: paymentMethod === 'cod' ? 'primary.light' : 'transparent',
+                                                bgcolor: paymentMethod === 'cod' ? alpha('#0C831F', 0.05) : 'transparent',
                                             }}
                                             onClick={() => setPaymentMethod('cod')}
                                         >
@@ -326,12 +330,12 @@ export default function CheckoutPage() {
                 return (
                     <Box>
                         <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>Review Order</Typography>
-                        <Paper variant="outlined" sx={{ p: 4, borderRadius: 4, bgcolor: '#f8fafc', mb: 3 }}>
+                        <Paper variant="outlined" sx={{ p: 4, borderRadius: 1.5, bgcolor: '#f8fafc', mb: 3 }}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', mb: 1 }}>Shipping To</Typography>
                             <Typography variant="body1" sx={{ fontWeight: 700 }}>{address.street}, {address.city}, {address.state} - {address.zip}</Typography>
                             <Button size="small" sx={{ mt: 1 }} onClick={() => setActiveStep(0)}>Change Address</Button>
                         </Paper>
-                        <Paper variant="outlined" sx={{ p: 4, borderRadius: 4, bgcolor: '#f8fafc' }}>
+                        <Paper variant="outlined" sx={{ p: 4, borderRadius: 1.5, bgcolor: '#f8fafc' }}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', mb: 1 }}>Payment Method</Typography>
                             <Typography variant="body1" sx={{ fontWeight: 700 }}>
                                 {paymentMethod === 'stripe' ? 'Stripe Secure Payment' : paymentMethod === 'upi' ? 'UPI Payment (QR Scan)' : 'Cash on Delivery'}
@@ -351,22 +355,29 @@ export default function CheckoutPage() {
                 Checkout Center
             </Typography>
 
-            <Stepper activeStep={activeStep} sx={{ mb: 8, display: { xs: 'none', md: 'flex' } }}>
+            <Stepper activeStep={activeStep} sx={{ mb: 8, display: { xs: 'none', sm: 'flex' } }}>
                 {steps.map((label) => (
                     <Step key={label}>
                         <StepLabel
-                            StepIconProps={{ sx: { fontSize: '1.5rem' } }}
+                            StepIconProps={{ sx: { fontSize: '1.25rem' } }}
                         >
-                            <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '0.9rem' }}>{label}</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 800, fontSize: { xs: '0.7rem', md: '0.9rem' } }}>{label}</Typography>
                         </StepLabel>
                     </Step>
                 ))}
             </Stepper>
 
+            {/* Mobile simplified step display */}
+            <Box sx={{ display: { xs: 'block', sm: 'none' }, mb: 4, textAlign: 'center' }}>
+                <Typography variant="overline" sx={{ fontWeight: 900, color: 'primary.main' }}>
+                    Step {activeStep + 1} of {steps.length}: {steps[activeStep]}
+                </Typography>
+            </Box>
+
             <Grid container spacing={6}>
                 {/* Left: Content */}
                 <Grid size={{ xs: 12, md: 7 }}>
-                    <Paper elevation={0} sx={{ p: { xs: 3, md: 5 }, borderRadius: 6, border: '1px solid #f1f5f9' }}>
+                    <Paper elevation={0} sx={{ p: { xs: 3, md: 5 }, borderRadius: 1.5, border: '1px solid #f1f5f9' }}>
                         {renderStepContent(activeStep)}
 
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 8 }}>
@@ -374,9 +385,9 @@ export default function CheckoutPage() {
                                 disabled={activeStep === 0 || !!clientSecret || showUpiQR}
                                 onClick={handleBack}
                                 startIcon={<BackIcon />}
-                                sx={{ ml: 1, fontWeight: 800 }}
+                                sx={{ ml: 1, fontWeight: 800, minWidth: { xs: 'auto', md: 100 } }}
                             >
-                                Back
+                                {activeStep === 0 ? '' : 'Back'}
                             </Button>
                             <Box>
                                 {activeStep === steps.length - 1 ? (
@@ -392,20 +403,25 @@ export default function CheckoutPage() {
                                             sx={{
                                                 px: 5, py: 1.5,
                                                 fontWeight: 900,
-                                                borderRadius: 3,
+                                                borderRadius: 1,
                                                 boxShadow: '0 8px 24px rgba(12, 131, 31, 0.2)'
                                             }}
                                         >
-                                            {placingOrder ? <CircularProgress size={24} color="inherit" /> : (paymentMethod === 'stripe' || paymentMethod === 'upi' ? 'Proceed to Payment' : 'Confirm Order')}
+                                            {placingOrder ? (
+                                                <Stack direction="row" spacing={1} alignItems="center">
+                                                    <CircularProgress size={20} color="inherit" />
+                                                    <Typography variant="body2" sx={{ fontWeight: 900 }}>Placing Order...</Typography>
+                                                </Stack>
+                                            ) : (paymentMethod === 'stripe' || paymentMethod === 'upi' ? 'Proceed to Payment' : 'Confirm Order')}
                                         </Button>
                                     )
                                 ) : (
                                     <Button
                                         variant="contained"
                                         onClick={handleNext}
-                                        sx={{ px: 8, py: 1.5, fontWeight: 900, borderRadius: 3 }}
+                                        sx={{ px: { xs: 4, md: 8 }, py: 1.5, fontWeight: 900, borderRadius: 1 }}
                                     >
-                                        Next Step
+                                        {activeStep === 1 ? 'Review Order' : 'Next Step'}
                                     </Button>
                                 )}
                             </Box>
@@ -415,13 +431,13 @@ export default function CheckoutPage() {
 
                 {/* Right: Summary */}
                 <Grid size={{ xs: 12, md: 5 }}>
-                    <Paper elevation={0} sx={{ p: 4, borderRadius: 6, bgcolor: '#1e293b', color: 'white', position: 'sticky', top: 100 }}>
+                    <Paper elevation={0} sx={{ p: 4, borderRadius: 1.5, bgcolor: '#1e293b', color: 'white', position: 'sticky', top: 100 }}>
                         <Typography variant="h5" sx={{ fontWeight: 900, mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
                             <BagIcon /> Order Summary
                         </Typography>
 
                         <List disablePadding sx={{ mb: 4, maxHeight: 300, overflowY: 'auto' }}>
-                            {cart.items.map((item) => (
+                            {cart?.items?.map((item) => (
                                 <ListItem key={item.id} sx={{ py: 2, px: 0 }}>
                                     <ListItemAvatar>
                                         <Avatar
@@ -450,7 +466,7 @@ export default function CheckoutPage() {
                         <Stack spacing={2} sx={{ py: 2 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Subtotal</Typography>
-                                <Typography variant="body2" sx={{ fontWeight: 800 }}>₹{cart.subtotal}</Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 800 }}>₹{cart?.subtotal || '0.00'}</Typography>
                             </Box>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Delivery Fee</Typography>

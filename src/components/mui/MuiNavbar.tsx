@@ -29,11 +29,13 @@ import {
 import { styled, alpha } from '@mui/material/styles';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
+import MuiBackButton from './MuiBackButton';
 
 const Search = styled('div')(({ theme }) => ({
     position: 'relative',
-    borderRadius: 24,
+    borderRadius: 8,
     backgroundColor: '#f1f5f9',
     '&:hover': {
         backgroundColor: '#e2e8f0',
@@ -93,8 +95,16 @@ function HideOnScroll(props: { children: React.ReactElement }) {
 
 export default function MuiNavbar() {
     const { user, logout } = useAuth();
+    const { cartCount } = useCart();
     const router = useRouter();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const handleSearch = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && searchQuery.trim()) {
+            router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+        }
+    };
 
     const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -126,37 +136,26 @@ export default function MuiNavbar() {
                 <Container maxWidth="xl">
                     <Toolbar disableGutters sx={{ minHeight: { xs: 70, md: 80 } }}>
                         {/* Logo */}
-                        <Typography
-                            variant="h6"
-                            noWrap
+                        <Box
                             component={Link}
                             href="/"
                             sx={{
                                 mr: 4,
                                 display: 'flex',
                                 alignItems: 'center',
-                                fontWeight: 900,
-                                color: 'primary.main',
                                 textDecoration: 'none',
                                 gap: 1.5,
                             }}
                         >
-                            <Box
-                                sx={{
-                                    bgcolor: 'primary.main',
-                                    color: 'white',
-                                    px: 1.5,
-                                    py: 1,
-                                    borderRadius: 2,
-                                    fontSize: '1.2rem',
-                                }}
-                            >
-                                F
-                            </Box>
+                            <img 
+                                src="/logo.png" 
+                                alt="FlashBasket Logo" 
+                                style={{ width: 40, height: 40, objectFit: 'contain' }} 
+                            />
                             <Typography variant="h5" sx={{ fontWeight: 900, color: 'text.primary', display: { xs: 'none', md: 'block' } }}>
                                 FlashBasket
                             </Typography>
-                        </Typography>
+                        </Box>
 
                         {/* Location Selector */}
                         {user && (
@@ -183,6 +182,9 @@ export default function MuiNavbar() {
                                     <StyledInputBase
                                         placeholder="Search for 'groceries', 'electronics'..."
                                         inputProps={{ 'aria-label': 'search' }}
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onKeyDown={handleSearch}
                                     />
                                 </Search>
                             </Box>
@@ -204,8 +206,9 @@ export default function MuiNavbar() {
                                         sx={{
                                             bgcolor: 'primary.main',
                                             color: 'white',
-                                            fontWeight: 800,
+                                            fontWeight: 900,
                                             px: 3,
+                                            borderRadius: 1,
                                         }}
                                     >
                                         Sign Up
@@ -245,9 +248,10 @@ export default function MuiNavbar() {
                                         PaperProps={{
                                             sx: {
                                                 mt: 1.5,
-                                                minWidth: 180,
-                                                borderRadius: 3,
-                                                boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                                                minWidth: 200,
+                                                borderRadius: 1.5,
+                                                boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                                                border: '1px solid #f1f5f9',
                                             }
                                         }}
                                     >
@@ -264,22 +268,31 @@ export default function MuiNavbar() {
                                 component={Link}
                                 href="/cart"
                                 variant="contained"
-                                startIcon={<ShoppingCartIcon />}
+                                startIcon={
+                                    <Badge badgeContent={cartCount} color="error" sx={{ '& .MuiBadge-badge': { fontWeight: 900 } }}>
+                                        <ShoppingCartIcon />
+                                    </Badge>
+                                }
                                 sx={{
                                     bgcolor: 'primary.main',
                                     color: 'white',
-                                    fontWeight: 800,
-                                    borderRadius: 3,
-                                    px: 3,
+                                    fontWeight: 900,
+                                    borderRadius: 1,
+                                    px: 4,
                                     py: 1.5,
-                                    display: { xs: 'none', sm: 'flex' }
+                                    display: { xs: 'none', sm: 'flex' },
+                                    boxShadow: '0 8px 20px rgba(12, 131, 31, 0.2)',
+                                    '&:hover': {
+                                        bgcolor: 'primary.dark',
+                                        boxShadow: '0 12px 24px rgba(12, 131, 31, 0.3)',
+                                    }
                                 }}
                             >
                                 My Cart
                             </Button>
 
                             <IconButton component={Link} href="/cart" sx={{ display: { xs: 'flex', sm: 'none' }, color: 'primary.main' }}>
-                                <Badge badgeContent={0} color="error">
+                                <Badge badgeContent={cartCount} color="error">
                                     <ShoppingCartIcon />
                                 </Badge>
                             </IconButton>

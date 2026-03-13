@@ -4,7 +4,6 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
     Box,
     Typography,
-    Button,
     Stack,
     Card,
     Avatar,
@@ -16,6 +15,7 @@ import {
     Tooltip,
     Menu,
     MenuItem,
+    Button,
 } from '@mui/material';
 import {
     DataGrid,
@@ -25,40 +25,21 @@ import {
     GridPaginationModel,
 } from '@mui/x-data-grid';
 import {
-    Add as AddIcon,
     Search as SearchIcon,
-    Edit as EditIcon,
     DeleteOutline as DeleteIcon,
     Inventory2Outlined as ProductIcon,
-    Visibility as VisibleIcon,
-    VisibilityOff as HiddenIcon,
     FilterList as FilterIcon,
+    StorefrontOutlined as SellerIcon,
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
-import { useRouter } from 'next/navigation';
 import debounce from 'lodash/debounce';
 
-interface Product {
-    id: number;
-    productName: string;
-    price: string;
-    stock: number;
-    unit: string;
-    status: string;
-    images: string[];
-}
-
-export default function SellerProductsPage() {
-    const router = useRouter();
-    const [products, setProducts] = useState<Product[]>([]);
+export default function AdminProductsPage() {
+    const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [totalItems, setTotalItems] = useState(0);
 
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
-
-    // States for Server-side
     const [searchQuery, setSearchQuery] = useState('');
     const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
         page: 0,
@@ -67,6 +48,9 @@ export default function SellerProductsPage() {
     const [sortModel, setSortModel] = useState<GridSortModel>([
         { field: 'createdAt', sort: 'desc' },
     ]);
+
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
 
     const fetchProducts = useCallback(async () => {
         try {
@@ -80,12 +64,12 @@ export default function SellerProductsPage() {
                 sortOrder: sortModel[0]?.sort || 'desc',
             });
 
-            const response = await api.get(`/seller/products?${params.toString()}`);
+            const response = await api.get(`/products/admin?${params.toString()}`);
             setProducts(response.data.items || []);
             setTotalItems(response.data.totalItems || 0);
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to fetch products', err);
-            toast.error('Failed to load products');
+            toast.error(err.response?.data?.message || err.message || 'Failed to load products');
         } finally {
             setLoading(false);
         }
@@ -118,25 +102,27 @@ export default function SellerProductsPage() {
         });
     }, []);
 
-    const toggleStatus = useCallback(async (id: number, currentStatus: string) => {
-        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const handleUpdateStatus = useCallback(async (id: number, status: string) => {
         try {
-            await api.put(`/seller/product/${id}`, { status: newStatus });
-            toast.success(newStatus === 'active' ? 'Product Visible' : 'Product Hidden');
+            setLoading(true);
+            await api.patch(`/products/${id}`, { status });
+            toast.success(`Product is now ${status}`);
             fetchProducts();
-        } catch (err: any) {
-            toast.error('Failed to update status');
+        } catch (err) {
+            toast.error('Failed to update product status');
+        } finally {
+            setLoading(false);
         }
     }, [fetchProducts]);
 
     const deleteProduct = useCallback(async (id: number) => {
-        if (!confirm('Are you sure you want to delete this product?')) return;
+        if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
         try {
-            await api.delete(`/seller/product/${id}`);
-            toast.success('Product Deleted');
+            await api.delete(`/products/${id}`); // Assuming global delete path
+            toast.success('Product deleted successfully');
             fetchProducts();
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Failed to delete product');
+            toast.error('Failed to delete product');
         }
     }, [fetchProducts]);
 
@@ -153,8 +139,8 @@ export default function SellerProductsPage() {
                     alignItems="center" 
                     sx={{ 
                         height: '100%', 
-                        width: '100%',
-                        py: 0.5
+                        width: '100%', 
+                        py: 0.5 
                     }}
                 >
                     <Avatar
@@ -163,9 +149,10 @@ export default function SellerProductsPage() {
                         sx={{ 
                             width: 64, 
                             height: 64, 
-                            bgcolor: '#f8fafc',                             p: 0.5,
-                             border: '1px solid #f1f5f9',
-                             borderRadius: '12px',
+                            bgcolor: '#f8fafc', 
+                            p: 0.5,
+                            border: '1px solid #f1f5f9',
+                            borderRadius: 3,
                             flexShrink: 0,
                             '& img': { objectFit: 'contain' }
                         }}
@@ -177,7 +164,7 @@ export default function SellerProductsPage() {
                             variant="subtitle2" 
                             sx={{ 
                                 fontWeight: 900, 
-                                color: params.row.status === 'inactive' ? 'text.disabled' : '#1e293b',
+                                color: params.row.status === 'hidden' ? 'text.disabled' : '#1e293b',
                                 lineHeight: 1.4,
                                 textTransform: 'capitalize',
                                 overflow: 'hidden',
@@ -189,40 +176,35 @@ export default function SellerProductsPage() {
                         >
                             {params.row.productName}
                         </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                {params.row.unit}
-                            </Typography>
-                        </Box>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            {params.row.Category?.name} • {params.row.SubCategory?.name}
+                        </Typography>
                     </Stack>
                 </Stack>
             ),
         },
         {
-            field: 'stock',
-            headerName: 'Inventory',
-            width: 150,
+            field: 'seller',
+            headerName: 'Seller',
+            width: 200,
             renderCell: (params: GridRenderCellParams) => (
-                <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            fontWeight: 800,
-                            color: params.row.stock < 10 ? 'error.main' : 'text.primary',
-                            bgcolor: params.row.stock < 10 ? alpha('#ef5350', 0.1) : 'transparent',
-                            px: 1,
-                            borderRadius: 1
-                        }}
-                    >
-                        {params.row.stock} in stock
-                    </Typography>
-                </Box>
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ height: '100%' }}>
+                    <SellerIcon sx={{ color: 'primary.main', fontSize: 18 }} />
+                    <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 800, color: '#1e293b' }}>
+                            {params.row.Seller?.shop_name || 'N/A'}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 700 }}>
+                            {params.row.Seller?.email}
+                        </Typography>
+                    </Box>
+                </Stack>
             ),
         },
         {
             field: 'price',
             headerName: 'Price',
-            width: 150,
+            width: 100,
             renderCell: (params: GridRenderCellParams) => (
                 <Typography variant="body2" sx={{ fontWeight: 900, display: 'flex', alignItems: 'center', height: '100%' }}>
                     ₹{params.row.price}
@@ -230,58 +212,118 @@ export default function SellerProductsPage() {
             ),
         },
         {
-            field: 'status',
-            headerName: 'Status',
-            width: 150,
+            field: 'stock',
+            headerName: 'Stock',
+            width: 100,
             renderCell: (params: GridRenderCellParams) => (
                 <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-                    <Chip
-                        label={params.row.status}
-                        size="small"
+                    <Typography
+                        variant="body2"
                         sx={{
-                            fontWeight: 900,
-                            textTransform: 'uppercase',
-                            fontSize: '0.65rem',
-                            bgcolor: params.row.status === 'active' ? alpha('#0C831F', 0.1) : '#f1f5f9',
-                            color: params.row.status === 'active' ? '#0C831F' : 'text.secondary',
-                            borderRadius: 2
+                            fontWeight: 800,
+                            color: params.row.stock < 10 ? 'error.main' : 'text.primary',
                         }}
-                    />
+                    >
+                        {params.row.stock} {params.row.unit}
+                    </Typography>
                 </Box>
             ),
         },
         {
+            field: 'status',
+            headerName: 'Status',
+            width: 120,
+            renderCell: (params: GridRenderCellParams) => {
+                const colors: any = {
+                    active: { bg: alpha('#0C831F', 0.1), text: '#0C831F' },
+                    pending: { bg: alpha('#f59e0b', 0.1), text: '#f59e0b' },
+                    rejected: { bg: alpha('#ef4444', 0.1), text: '#ef4444' },
+                    hidden: { bg: alpha('#64748b', 0.1), text: '#64748b' },
+                    'out-of-stock': { bg: alpha('#ef4444', 0.1), text: '#ef4444' }
+                };
+                const color = colors[params.row.status] || { bg: '#f1f5f9', text: 'text.secondary' };
+                return (
+                    <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+                        <Chip
+                            label={params.row.status}
+                            size="small"
+                            sx={{
+                                fontWeight: 900,
+                                textTransform: 'uppercase',
+                                fontSize: '0.65rem',
+                                bgcolor: color.bg,
+                                color: color.text,
+                                borderRadius: 1.5
+                            }}
+                        />
+                    </Box>
+                );
+            },
+        },
+        {
             field: 'actions',
             headerName: 'Actions',
-            width: 150,
+            width: 280,
             sortable: false,
             headerAlign: 'right',
             align: 'right',
             renderCell: (params: GridRenderCellParams) => (
-                <Stack direction="row" spacing={0.5} justifyContent="flex-end" alignItems="center" sx={{ height: '100%', width: '100%' }}>
-                    <Tooltip title={params.row.status === 'active' ? "Hide from Users" : "Show to Users"}>
-                        <IconButton 
+                <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ width: '100%', height: '100%', alignItems: 'center' }}>
+                    {params.row.status === 'pending' && (
+                        <>
+                            <Button 
+                                size="small" 
+                                variant="contained" 
+                                color="success" 
+                                disableElevation
+                                onClick={() => handleUpdateStatus(params.row.id, 'active')}
+                                sx={{ borderRadius: 2, fontWeight: 900, fontSize: '0.65rem', textTransform: 'none' }}
+                            >
+                                Approve
+                            </Button>
+                            <Button 
+                                size="small" 
+                                variant="outlined" 
+                                color="error" 
+                                onClick={() => handleUpdateStatus(params.row.id, 'rejected')}
+                                sx={{ borderRadius: 2, fontWeight: 900, fontSize: '0.65rem', textTransform: 'none' }}
+                            >
+                                Reject
+                            </Button>
+                        </>
+                    )}
+                    
+                    {params.row.status === 'active' && (
+                        <Button 
                             size="small" 
-                            onClick={() => toggleStatus(params.row.id, params.row.status)}
-                            sx={{ color: params.row.status === 'active' ? 'primary.main' : 'text.disabled' }}
+                            variant="outlined" 
+                            color="warning" 
+                            onClick={() => handleUpdateStatus(params.row.id, 'hidden')}
+                            sx={{ borderRadius: 2, fontWeight: 900, fontSize: '0.65rem', textTransform: 'none' }}
                         >
-                            {params.row.status === 'active' ? <VisibleIcon fontSize="small" /> : <HiddenIcon fontSize="small" />}
-                        </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Edit Product">
-                        <IconButton size="small" onClick={() => router.push(`/seller/products/edit/${params.row.id}`)} sx={{ color: 'info.main' }}>
-                            <EditIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete Product">
-                        <IconButton size="small" onClick={() => deleteProduct(params.row.id)} sx={{ color: 'error.main' }}>
-                            <DeleteIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
+                            Hide Item
+                        </Button>
+                    )}
+
+                    {params.row.status === 'hidden' && (
+                        <Button 
+                            size="small" 
+                            variant="outlined" 
+                            color="info" 
+                            onClick={() => handleUpdateStatus(params.row.id, 'active')}
+                            sx={{ borderRadius: 2, fontWeight: 900, fontSize: '0.65rem', textTransform: 'none' }}
+                        >
+                            Show Item
+                        </Button>
+                    )}
+
+                    <IconButton size="small" onClick={() => deleteProduct(params.row.id)} sx={{ color: 'error.main', opacity: 0.5, '&:hover': { opacity: 1 } }}>
+                        <DeleteIcon fontSize="small" />
+                    </IconButton>
                 </Stack>
             ),
         },
-    ], [router, toggleStatus, deleteProduct]);
+    ], [handleUpdateStatus, deleteProduct]);
 
     const CustomNoRowsOverlay = () => (
         <Stack height="100%" alignItems="center" justifyContent="center" spacing={2}>
@@ -299,52 +341,32 @@ export default function SellerProductsPage() {
             </Box>
             <Box textAlign="center">
                 <Typography variant="h6" sx={{ fontWeight: 900, color: '#1e293b' }}>
-                    No Products Found
+                    No Global Items Found
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, maxWidth: 300, mx: 'auto', mt: 1 }}>
                     {searchQuery 
-                        ? "We couldn't find any products matching your search query. Try different keywords."
-                        : "Your catalog is currently empty. Start by adding your first product to the store."}
+                        ? "We couldn't find any marketplace items matching your search. Try broadening your terms."
+                        : "There are currently no products available from any sellers in the marketplace."}
                 </Typography>
-                {!searchQuery && (
-                    <Button
-                        variant="text"
-                        startIcon={<AddIcon />}
-                        onClick={() => router.push('/seller/products/add')}
-                        sx={{ mt: 2, fontWeight: 900, color: 'primary.main', '&:hover': { bgcolor: alpha('#0C831F', 0.05) } }}
-                    >
-                        Add First Product
-                    </Button>
-                )}
             </Box>
         </Stack>
     );
 
     return (
         <Box sx={{ p: 1 }}>
-            <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'flex-end' }} spacing={3} sx={{ mb: 6 }}>
-                <Box>
-                    <Typography variant="h3" sx={{ fontWeight: 900, letterSpacing: '-0.02em' }}>Product Catalog</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', mt: 1, letterSpacing: '0.1em' }}>
-                        Manage your {totalItems} store products
-                    </Typography>
-                </Box>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => router.push('/seller/products/add')}
-                    sx={{ px: 4, py: 1.5, borderRadius: '16px', fontWeight: 900, boxShadow: '0 8px 24px rgba(12, 131, 31, 0.2)' }}
-                >
-                    Add New Product
-                </Button>
-            </Stack>
+            <Box sx={{ mb: 6 }}>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>Global Catalog</Typography>
+                <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1 }}>
+                    Monitoring {totalItems} items across all marketplace sellers.
+                </Typography>
+            </Box>
 
-            <Card elevation={0} sx={{ borderRadius: '24px', border: '1px solid #f1f5f9', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
+            <Card elevation={0} sx={{ borderRadius: 6, border: '1px solid #f1f5f9', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
                 <Box sx={{ p: 3, borderBottom: '1px solid #f8fafc', display: 'flex', gap: 2 }}>
                     <TextField
                         fullWidth
                         variant="outlined"
-                        placeholder="Search products by name or description..."
+                        placeholder="Search by product name, description, or seller..."
                         value={searchQuery}
                         onChange={(e) => { setSearchQuery(e.target.value); setPaginationModel(prev => ({ ...prev, page: 0 })); }}
                         InputProps={{
@@ -353,12 +375,12 @@ export default function SellerProductsPage() {
                                     <SearchIcon sx={{ color: 'text.disabled' }} />
                                 </InputAdornment>
                             ),
-                            sx: { borderRadius: '14px', bgcolor: '#f8fafc' }
+                            sx: { borderRadius: 3, bgcolor: '#f8fafc' }
                         }}
                     />
                     <IconButton 
                         onClick={(e) => setFilterAnchorEl(e.currentTarget)}
-                        sx={{ bgcolor: statusFilter !== 'all' ? alpha('#0C831F', 0.1) : '#f8fafc', borderRadius: '14px' }}
+                        sx={{ bgcolor: statusFilter !== 'all' ? alpha('#0C831F', 0.1) : '#f8fafc', borderRadius: 3 }}
                     >
                         <FilterIcon sx={{ color: statusFilter !== 'all' ? '#0C831F' : 'text.secondary', fontSize: 20 }} />
                     </IconButton>
@@ -389,11 +411,25 @@ export default function SellerProductsPage() {
                             Active Only
                         </MenuItem>
                         <MenuItem 
-                            onClick={() => { setStatusFilter('inactive'); setFilterAnchorEl(null); setPaginationModel(prev => ({ ...prev, page: 0 })); }}
-                            selected={statusFilter === 'inactive'}
+                            onClick={() => { setStatusFilter('pending'); setFilterAnchorEl(null); setPaginationModel(prev => ({ ...prev, page: 0 })); }}
+                            selected={statusFilter === 'pending'}
                             sx={{ borderRadius: 2, fontWeight: 700 }}
                         >
-                            Inactive Only
+                            Pending Approval
+                        </MenuItem>
+                        <MenuItem 
+                            onClick={() => { setStatusFilter('hidden'); setFilterAnchorEl(null); setPaginationModel(prev => ({ ...prev, page: 0 })); }}
+                            selected={statusFilter === 'hidden'}
+                            sx={{ borderRadius: 2, fontWeight: 700 }}
+                        >
+                            Hidden Items
+                        </MenuItem>
+                        <MenuItem 
+                            onClick={() => { setStatusFilter('rejected'); setFilterAnchorEl(null); setPaginationModel(prev => ({ ...prev, page: 0 })); }}
+                            selected={statusFilter === 'rejected'}
+                            sx={{ borderRadius: 2, fontWeight: 700 }}
+                        >
+                            Rejected Items
                         </MenuItem>
                     </Stack>
                 </Menu>

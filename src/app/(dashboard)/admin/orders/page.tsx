@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box,
     Typography,
@@ -19,41 +19,85 @@ import {
     Stack,
     CircularProgress,
     alpha,
-    Divider
+    Divider,
+    TextField,
+    InputAdornment,
+    TablePagination,
+    IconButton,
+    Menu,
+    Avatar
 } from '@mui/material';
 import { 
     AssignmentInd as AssignIcon, 
     LocalShipping as DispatchIcon,
     CheckCircle as DoneIcon,
-    Cancel as CancelIcon
+    Cancel as CancelIcon,
+    Search as SearchIcon,
+    FilterList as FilterIcon,
+    Sort as SortIcon
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import debounce from 'lodash/debounce';
 
 export default function AdminOrders() {
     const [orders, setOrders] = useState<any[]>([]);
     const [partners, setPartners] = useState<any[]>([]);
+    const [totalItems, setTotalItems] = useState(0);
     const [loading, setLoading] = useState(true);
 
-    const fetchData = async () => {
+    // Search/Pagination/Sort States
+    const [searchQuery, setSearchQuery] = useState('');
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [sortBy, setSortBy] = useState('createdAt');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [statusFilter, setStatusFilter] = useState('all');
+
+    const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
+
+    const fetchOrders = async () => {
         try {
             setLoading(true);
-            const [ordersRes, partnersRes] = await Promise.all([
-                api.get('/admin/orders'),
-                api.get('/admin/partners')
-            ]);
-            setOrders(ordersRes.data || []);
-            setPartners(partnersRes.data || []);
+            const params = new URLSearchParams({
+                page: (page + 1).toString(),
+                limit: rowsPerPage.toString(),
+                search: searchQuery,
+                sortBy: sortBy,
+                sortOrder: sortOrder,
+                status: statusFilter === 'all' ? '' : statusFilter,
+            });
+
+            const response = await api.get(`/admin/orders?${params.toString()}`);
+            setOrders(response.data.items || []);
+            setTotalItems(response.data.totalItems || 0);
         } catch (error: any) {
-            console.error('ADMIN DATA FETCH ERROR:', error);
             toast.error(error.message || 'Failed to load orders.');
         } finally {
             setLoading(false);
         }
     };
 
+    const fetchPartners = async () => {
+        try {
+            const partnersRes = await api.get('/admin/partners?limit=100');
+            setPartners(partnersRes.data.items || []);
+        } catch (error) {
+            console.error('PARTNERS FETCH ERROR:', error);
+        }
+    };
+
+    // Unified Fetch Logic with Debounce
     useEffect(() => {
-        fetchData();
+        const timer = setTimeout(() => {
+            fetchOrders();
+        }, searchQuery ? 500 : 0);
+
+        return () => clearTimeout(timer);
+    }, [page, rowsPerPage, sortBy, sortOrder, statusFilter, searchQuery]);
+
+    useEffect(() => {
+        fetchPartners();
     }, []);
 
     const handleAssignDelivery = async (orderId: number, partnerId: number | '') => {
@@ -61,7 +105,7 @@ export default function AdminOrders() {
         try {
             await api.put('/admin/assign-delivery', { orderId, partnerId });
             toast.success('Delivery boy assigned successfully!');
-            fetchData();
+            fetchOrders();
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Failed to assign delivery boy');
         }
@@ -71,7 +115,7 @@ export default function AdminOrders() {
         try {
             await api.put(`/admin/dispatch-order/${orderId}`, {});
             toast.success('Order dispatched back to seller!');
-            fetchData();
+            fetchOrders();
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Failed to dispatch order');
         }
@@ -82,7 +126,7 @@ export default function AdminOrders() {
         try {
             await api.patch(`/orders/${orderId}/status`, { status: 'cancelled' });
             toast.warn('Order Cancelled');
-            fetchData();
+            fetchOrders();
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Failed to cancel order');
         }
@@ -107,42 +151,116 @@ export default function AdminOrders() {
         return <Chip label={config.label} color={config.color} size="small" sx={{ fontWeight: 900, borderRadius: 2 }} />;
     };
 
-    if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress /></Box>;
+    const handleSort = (field: string) => {
+        if (sortBy === field) {
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(field);
+            setSortOrder('asc');
+        }
+    };
 
     return (
         <Box sx={{ p: 1 }}>
-            <Box sx={{ mb: 4 }}>
-                <Typography variant="h4" sx={{ fontWeight: 900, color: 'primary.dark' }}>
-                    Logistics Control
-                </Typography>
-                <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                    Manage delivery assignments and monitor platform-wide order movement.
-                </Typography>
+            <Box sx={{ mb: 6 }}>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>Logistics Control</Typography>
+                <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1 }}>Monitor global order lifecycle and handle driver dispatching.</Typography>
             </Box>
 
-            <TableContainer component={Card} elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 4 }}>
+            <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
+                <TextField
+                    placeholder="Search Order ID or Customer..."
+                    value={searchQuery}
+                    onChange={(e) => { setSearchQuery(e.target.value); setPage(0); }}
+                    fullWidth
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon sx={{ color: 'text.disabled' }} />
+                            </InputAdornment>
+                        ),
+                        sx: { borderRadius: 4, bgcolor: 'white', fontWeight: 600 }
+                    }}
+                />
+                <IconButton 
+                    onClick={(e) => setFilterAnchorEl(e.currentTarget)}
+                    sx={{ bgcolor: statusFilter !== 'all' ? alpha('#0C831F', 0.1) : 'white', borderRadius: 3, border: '1px solid #e2e8f0' }}
+                >
+                    <FilterIcon sx={{ color: statusFilter !== 'all' ? '#0C831F' : 'text.secondary', fontSize: 20 }} />
+                </IconButton>
+            </Stack>
+
+            <Menu
+                anchorEl={filterAnchorEl}
+                open={Boolean(filterAnchorEl)}
+                onClose={() => setFilterAnchorEl(null)}
+                PaperProps={{
+                    sx: { p: 2, width: 250, borderRadius: 4, mt: 1, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }
+                }}
+            >
+                <Typography variant="overline" sx={{ fontWeight: 900, ml: 1, color: 'text.disabled' }}>Filter by Stage</Typography>
+                <FormControl fullWidth size="small" sx={{ mt: 1, mb: 1 }}>
+                    <Select
+                        value={statusFilter}
+                        onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
+                        sx={{ borderRadius: 3, fontWeight: 700 }}
+                    >
+                        <MenuItem value="all">Any Stage</MenuItem>
+                        <MenuItem value="pending">Recently Placed</MenuItem>
+                        <MenuItem value="awaiting-assignment">Needs Driver</MenuItem>
+                        <MenuItem value="shipped">In Transit</MenuItem>
+                        <MenuItem value="delivered">Delivered</MenuItem>
+                        <MenuItem value="cancelled">Cancelled</MenuItem>
+                    </Select>
+                </FormControl>
+                <Divider sx={{ my: 1.5 }} />
+                <Typography variant="overline" sx={{ fontWeight: 900, ml: 1, color: 'text.disabled' }}>Sort by</Typography>
+                <Stack spacing={1} sx={{ mt: 1 }}>
+                    {[
+                        { label: 'Order Date', field: 'createdAt' },
+                        { label: 'Amount', field: 'totalAmount' }
+                    ].map((s) => (
+                        <Button
+                            key={s.field}
+                            onClick={() => handleSort(s.field)}
+                            size="small"
+                            startIcon={<SortIcon sx={{ transform: sortBy === s.field && sortOrder === 'desc' ? 'scaleY(-1)' : 'none' }} />}
+                            sx={{ 
+                                justifyContent: 'flex-start', 
+                                fontWeight: 700, 
+                                color: sortBy === s.field ? 'primary.main' : 'text.secondary',
+                                bgcolor: sortBy === s.field ? alpha('#0C831F', 0.05) : 'transparent',
+                                '&:hover': { bgcolor: alpha('#0C831F', 0.1) }
+                            }}
+                        >
+                            {s.label}
+                        </Button>
+                    ))}
+                </Stack>
+            </Menu>
+
+            <TableContainer component={Card} elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden', position: 'relative' }}>
+                {loading && (
+                    <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(255,255,255,0.7)', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <CircularProgress size={40} thickness={4} />
+                    </Box>
+                )}
                 <Table>
                     <TableHead sx={{ bgcolor: alpha('#0C831F', 0.05) }}>
                         <TableRow>
-                            <TableCell sx={{ fontWeight: 800 }}>Order</TableCell>
-                            <TableCell sx={{ fontWeight: 800 }}>Store</TableCell>
-                            <TableCell sx={{ fontWeight: 800 }}>Status</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 800 }}>Logistics Actions</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 800 }}>Admin</TableCell>
+                            <TableCell sx={{ fontWeight: 900, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.1em' }}>Order Info</TableCell>
+                            <TableCell sx={{ fontWeight: 900, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.1em' }}>Store</TableCell>
+                            <TableCell sx={{ fontWeight: 900, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.1em' }}>Status</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 900, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.1em' }}>Logistics</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 900, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.1em' }}>Actions</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {orders.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={5} align="center" sx={{ py: 6, color: 'text.secondary', fontWeight: 600 }}>
-                                    No orders found.
-                                </TableCell>
-                            </TableRow>
-                        ) : orders.map((order) => {
+                        {orders.map((order) => {
                             const isFinal = ['delivered', 'completed', 'cancelled'].includes(order.status);
 
                             return (
-                                <TableRow key={order.id} sx={{ '&:last-child td': { border: 0 } }}>
+                                <TableRow key={order.id} sx={{ '&:hover': { bgcolor: alpha('#f8fafc', 0.5) } }}>
                                     <TableCell>
                                         <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>{order.orderNumber}</Typography>
                                         <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
@@ -150,14 +268,25 @@ export default function AdminOrders() {
                                         </Typography>
                                     </TableCell>
                                     <TableCell>
-                                        <Typography variant="body2" sx={{ fontWeight: 800 }}>{order.Seller?.shop_name || 'N/A'}</Typography>
+                                        <Stack direction="row" spacing={2} alignItems="center">
+                                            <Avatar 
+                                                src={order.Seller?.profileImage} 
+                                                variant="rounded"
+                                                sx={{ width: 40, height: 40, bgcolor: 'primary.light', color: 'primary.main', fontWeight: 900 }}
+                                            >
+                                                {order.Seller?.shop_name?.charAt(0)}
+                                            </Avatar>
+                                            <Box>
+                                                <Typography variant="body2" sx={{ fontWeight: 800 }}>{order.Seller?.shop_name || 'N/A'}</Typography>
+                                                <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 700 }}>₹{order.totalAmount}</Typography>
+                                            </Box>
+                                        </Stack>
                                     </TableCell>
                                     <TableCell>
                                         {getStatusChip(order.status)}
                                     </TableCell>
                                     <TableCell>
                                         <Stack direction="row" spacing={1} alignItems="center" justifyContent="center">
-                                            {/* Step 1: Assignment */}
                                             <FormControl size="small" sx={{ minWidth: 160 }}>
                                                 <Select
                                                     displayEmpty
@@ -175,7 +304,6 @@ export default function AdminOrders() {
                                                 </Select>
                                             </FormControl>
 
-                                            {/* Step 2: Dispatch to Seller */}
                                             <Button
                                                 variant="contained"
                                                 size="small"
@@ -185,7 +313,7 @@ export default function AdminOrders() {
                                                 startIcon={<DispatchIcon />}
                                                 sx={{ fontWeight: 800, borderRadius: 2, textTransform: 'none' }}
                                             >
-                                                Send to Seller
+                                                Dispatch
                                             </Button>
                                         </Stack>
                                     </TableCell>
@@ -211,6 +339,26 @@ export default function AdminOrders() {
                         })}
                     </TableBody>
                 </Table>
+                
+                {!loading && orders.length === 0 && (
+                    <Box sx={{ py: 10, textAlign: 'center' }}>
+                        <Avatar sx={{ width: 64, height: 64, mx: 'auto', mb: 2, bgcolor: '#f1f5f9', color: 'text.disabled' }}>
+                            <SearchIcon sx={{ fontSize: 32 }} />
+                        </Avatar>
+                        <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.secondary' }}>No orders found</Typography>
+                        <Typography variant="body2" sx={{ color: 'text.disabled', fontWeight: 600 }}>Try adjusting your search or filters.</Typography>
+                    </Box>
+                )}
+
+                <TablePagination
+                    component="div"
+                    count={totalItems}
+                    page={page}
+                    onPageChange={(e, p) => setPage(p)}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+                    sx={{ borderTop: '1px solid #e2e8f0' }}
+                />
             </TableContainer>
         </Box>
     );

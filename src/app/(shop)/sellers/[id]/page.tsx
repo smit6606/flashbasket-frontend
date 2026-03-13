@@ -89,10 +89,10 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
                 setLoading(true);
                 const [sellerRes, productsRes] = await Promise.all([
                     api.get(`/sellers/${id}`),
-                    api.get(`/products?sellerId=${id}`)
+                    api.get(`/products?sellerId=${id}&limit=50`)
                 ]);
                 setSeller(sellerRes.data);
-                setProducts(productsRes.data);
+                setProducts(productsRes.data.items || []);
             } catch (err) {
                 console.error('Failed to fetch seller data', err);
             } finally {
@@ -130,7 +130,7 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
             <Paper elevation={0} sx={{
                 position: 'relative',
                 height: 350,
-                borderRadius: 10,
+                borderRadius: '40px',
                 overflow: 'hidden',
                 mb: 8,
                 bgcolor: '#0f172a'
@@ -197,10 +197,10 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
                             variant="contained"
                             size="large"
                             sx={{
-                                borderRadius: 4,
                                 px: 4,
                                 py: 1.5,
                                 fontWeight: 900,
+                                borderRadius: '16px',
                                 bgcolor: 'white',
                                 color: 'black',
                                 '&:hover': { bgcolor: alpha('#ffffff', 0.9) }
@@ -228,7 +228,7 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
                 </Stack>
 
                 {products.length === 0 ? (
-                    <Card elevation={0} sx={{ py: 10, textAlign: 'center', borderRadius: 8, border: '2px dashed #e2e8f0', bgcolor: '#f8fafc' }}>
+                    <Card elevation={0} sx={{ py: 10, textAlign: 'center', borderRadius: '32px', border: '2px dashed #e2e8f0', bgcolor: '#f8fafc' }}>
                         <BagIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2, opacity: 0.5 }} />
                         <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.secondary' }}>This store hasn't listed any products yet.</Typography>
                         <Typography variant="body2" sx={{ color: 'text.disabled', fontWeight: 700, mt: 1, textTransform: 'uppercase' }}>Check back later for fresh updates</Typography>
@@ -242,7 +242,7 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
                                     href={`/products/${product.id}`}
                                     elevation={0}
                                     sx={{
-                                        borderRadius: 8,
+                                        borderRadius: '24px',
                                         border: '1px solid #f1f5f9',
                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                         textDecoration: 'none',
@@ -258,7 +258,7 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
                                     <Box sx={{ p: 2 }}>
                                         <Box sx={{
                                             height: 200,
-                                            borderRadius: 6,
+                                            borderRadius: '16px',
                                             bgcolor: '#f8fafc',
                                             display: 'flex',
                                             alignItems: 'center',
@@ -307,7 +307,7 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
                                                     sx={{
                                                         bgcolor: product.stock <= 0 ? '#f1f5f9' : '#f1f5f9',
                                                         color: product.stock <= 0 ? 'text.disabled' : 'primary.main',
-                                                        borderRadius: 4,
+                                                        borderRadius: '12px',
                                                         width: 44,
                                                         height: 44,
                                                         transition: 'all 0.3s'

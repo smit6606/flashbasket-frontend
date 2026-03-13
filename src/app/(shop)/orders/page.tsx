@@ -48,7 +48,7 @@ interface Order {
 }
 
 export default function OrdersPage() {
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const router = useRouter();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
@@ -76,6 +76,12 @@ export default function OrdersPage() {
             return;
         }
 
+        // If not a 'user' role, redirect to dashboard to avoid 403 on /orders/user
+        if (user && user.role !== 'user') {
+            router.push(`/${user.role}`);
+            return;
+        }
+
         const fetchOrders = async () => {
             try {
                 const response = await api.get('/orders/user');
@@ -86,8 +92,11 @@ export default function OrdersPage() {
                 setLoading(false);
             }
         };
-        fetchOrders();
-    }, [token, router]);
+
+        if (user && user.role === 'user') {
+            fetchOrders();
+        }
+    }, [token, user, router]);
 
     const handleCancel = async (id: number) => {
         if(!window.confirm('Are you sure you want to cancel this order?')) return;

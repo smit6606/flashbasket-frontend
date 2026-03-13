@@ -10,70 +10,159 @@ import {
     Divider,
     Stack,
     Link as MuiLink,
+    alpha,
 } from '@mui/material';
 import {
     Facebook,
     Instagram,
+    Twitter,
+    LinkedIn,
 } from '@mui/icons-material';
 import Link from 'next/link';
 
 export default function MuiFooter() {
     return (
-        <Box component="footer" sx={{ bgcolor: '#f8fafc', py: 8, borderTop: '1px solid #e2e8f0', mt: 'auto' }}>
+        <Box
+            component="footer"
+            sx={{
+                bgcolor: '#0f172a',
+                color: 'white',
+                pt: 10,
+                pb: 6,
+                mt: 'auto'
+            }}
+        >
             <Container maxWidth="xl">
-                <Grid container spacing={4}>
-                    <Grid size={{ xs: 12, md: 3 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main', mb: 3 }}>
-                            <Box sx={{ bgcolor: 'primary.main', color: 'white', px: 1, py: 0.5, borderRadius: 1.5, fontWeight: 900 }}>F</Box>
-                            <Typography variant="h6" sx={{ fontWeight: 900 }}>FlashBasket</Typography>
+                <Grid container spacing={6}>
+                    {/* Brand & Socials */}
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 4 }}>
+                            <img 
+                                src="/logo.png" 
+                                alt="FlashBasket Logo" 
+                                style={{ width: 45, height: 45, objectFit: 'contain' }} 
+                            />
+                            <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: '-0.02em' }}>
+                                FlashBasket
+                            </Typography>
                         </Box>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600, mb: 4, maxWidth: 300, lineHeight: 1.7 }}>
                             Lightning-fast multi-seller marketplace. Get anything from your favorite local shops delivered in minutes.
                         </Typography>
-                        <Stack direction="row" spacing={1.5}>
-                            <IconButton size="small" sx={{ bgcolor: 'white', border: '1px solid #e2e8f0', '&:hover': { bgcolor: '#0C831F', color: 'white', borderColor: '#0C831F' } }}>
-                                <Facebook fontSize="small" />
-                            </IconButton>
-                            <IconButton size="small" sx={{ bgcolor: 'white', border: '1px solid #e2e8f0', '&:hover': { bgcolor: '#0C831F', color: 'white', borderColor: '#0C831F' } }}>
-                                <Instagram fontSize="small" />
-                            </IconButton>
-                        </Stack>
-                    </Grid>
-                    <Grid size={{ xs: 6, md: 3 }} sx={{ display: 'flex', flexDirection: 'column', alignItems: { md: 'center' }, textAlign: { md: 'center' } }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 900, mb: 3 }}>Company</Typography>
-                        <Stack spacing={1.5} sx={{ alignItems: { md: 'center' } }}>
-                            {['About Us', 'Careers', 'Press', 'Contact'].map(link => (
-                                <Link key={link} href="#" passHref style={{ textDecoration: 'none' }}>
-                                    <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}>{link}</Typography>
-                                </Link>
+                        <Stack direction="row" spacing={1}>
+                            {[
+                                { icon: <Instagram fontSize="small" />, label: 'Instagram' },
+                                { icon: <Twitter fontSize="small" />, label: 'Twitter' },
+                                { icon: <Facebook fontSize="small" />, label: 'Facebook' },
+                                { icon: <LinkedIn fontSize="small" />, label: 'LinkedIn' },
+                            ].map((social) => (
+                                <IconButton 
+                                    key={social.label}
+                                    size="small" 
+                                    sx={{ 
+                                        color: 'white', 
+                                        bgcolor: 'rgba(255,255,255,0.05)', 
+                                        '&:hover': { bgcolor: 'primary.main', color: 'white' } 
+                                    }}
+                                >
+                                    {social.icon}
+                                </IconButton>
                             ))}
                         </Stack>
                     </Grid>
-                    <Grid size={{ xs: 6, md: 3 }} sx={{ display: 'flex', flexDirection: 'column', alignItems: { md: 'center' }, textAlign: { md: 'center' } }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 900, mb: 3 }}>Products</Typography>
-                        <Stack spacing={1.5} sx={{ alignItems: { md: 'center' } }}>
-                            {['Fresh Vegetables', 'Dairy & Eggs', 'Snacks', 'Beverages'].map(link => (
-                                <Link key={link} href="#" passHref style={{ textDecoration: 'none' }}>
-                                    <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}>{link}</Typography>
-                                </Link>
-                            ))}
-                        </Stack>
+
+                    {/* Quick Links Group */}
+                    <Grid size={{ xs: 12, md: 5 }}>
+                        <Grid container spacing={2}>
+                            <Grid size={{ xs: 6, sm: 4 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Company</Typography>
+                                <Stack spacing={1.5}>
+                                    {['About Us', 'Careers', 'Blog', 'Contact Us'].map(l => (
+                                        <Typography key={l} variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}>{l}</Typography>
+                                    ))}
+                                </Stack>
+                            </Grid>
+                            <Grid size={{ xs: 6, sm: 4 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Support</Typography>
+                                <Stack spacing={1.5}>
+                                    {['Help Center', 'FAQs', 'Return Policy', 'Privacy Policy'].map(l => (
+                                        <Typography key={l} variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}>{l}</Typography>
+                                    ))}
+                                </Stack>
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Categories</Typography>
+                                <Stack spacing={1.5}>
+                                    {['Grocery', 'Snacks', 'Beverages', 'Personal Care'].map(l => (
+                                        <Typography key={l} variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}>{l}</Typography>
+                                    ))}
+                                </Stack>
+                            </Grid>
+                        </Grid>
                     </Grid>
-                    <Grid size={{ xs: 12, md: 3 }} sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' }, textAlign: { xs: 'left', md: 'right' } }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 900, mb: 3 }}>Support & Legal</Typography>
-                        <Stack spacing={1.5} sx={{ alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
-                            {['Help Center', 'Privacy Policy', 'Terms of Service', 'Refund Policy'].map(link => (
-                                <Link key={link} href="#" passHref style={{ textDecoration: 'none' }}>
-                                    <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}>{link}</Typography>
-                                </Link>
-                            ))}
+
+                    {/* App Download Info */}
+                    <Grid size={{ xs: 12, md: 3 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Download Our App</Typography>
+                        <Stack spacing={2}>
+                            {/* Google Play Button */}
+                            <Box 
+                                sx={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: 1.5, 
+                                    border: '1px solid rgba(255,255,255,0.15)', 
+                                    borderRadius: 2, 
+                                    p: '8px 16px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    '&:hover': { bgcolor: 'white', '& *': { color: '#0f172a' }, borderColor: 'white' }
+                                }}
+                            >
+                                <img src="/play-store.png" alt="Play Store" style={{ width: 24, height: 24 }} />
+                                <Box>
+                                    <Typography variant="caption" sx={{ display: 'block', fontSize: '0.6rem', fontWeight: 700, lineHeight: 1.2, color: 'rgba(255,255,255,0.5)' }}>Get it on</Typography>
+                                    <Typography variant="body2" sx={{ fontWeight: 800, lineHeight: 1.2 }}>Google Play</Typography>
+                                </Box>
+                            </Box>
+
+                            {/* App Store Button */}
+                            <Box 
+                                sx={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: 1.5, 
+                                    border: '1px solid rgba(255,255,255,0.15)', 
+                                    borderRadius: 2, 
+                                    p: '8px 16px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    '&:hover': { bgcolor: 'white', '& *': { color: '#0f172a' }, borderColor: 'white' }
+                                }}
+                            >
+                                <img src="/apple-store.png" alt="App Store" style={{ width: 24, height: 24, filter: 'invert(1)' }} />
+                                <Box>
+                                    <Typography variant="caption" sx={{ display: 'block', fontSize: '0.6rem', fontWeight: 700, lineHeight: 1.2, color: 'rgba(255,255,255,0.5)' }}>Download on the</Typography>
+                                    <Typography variant="body2" sx={{ fontWeight: 800, lineHeight: 1.2 }}>App Store</Typography>
+                                </Box>
+                            </Box>
                         </Stack>
+                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 600, display: 'block', mt: 3 }}>
+                            Experience the fastest delivery in your city. Download the FlashBasket app today for exclusive rewards.
+                        </Typography>
                     </Grid>
                 </Grid>
-                <Divider sx={{ my: 4 }} />
-                <Typography variant="body2" sx={{ textAlign: 'center', color: 'text.secondary', fontWeight: 700 }}>
-                    © 2026 FlashBasket Technologies. All rights reserved.
-                </Typography>
+
+                <Divider sx={{ my: 6, borderColor: 'rgba(255,255,255,0.05)' }} />
+
+                <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" spacing={2}>
+                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700 }}>
+                        © {new Date().getFullYear()} FlashBasket Technologies Private Limited.
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>
+                        Made with ❤️ for Local Commerce
+                    </Typography>
+                </Stack>
             </Container>
         </Box>
     );

@@ -28,7 +28,7 @@ export default function MuiCartSummary({ subtotal, onCheckout }: MuiCartSummaryP
 
     return (
         <Box sx={{ position: 'sticky', top: 100 }}>
-            <Paper elevation={0} sx={{ p: 4, borderRadius: 6, border: '1px solid #f1f5f9' }}>
+            <Paper elevation={0} sx={{ p: 4, borderRadius: 1.5, border: '1px solid #f1f5f9' }}>
                 <Typography variant="h6" sx={{ fontWeight: 900, mb: 4 }}>Billing Summary</Typography>
 
                 <Stack spacing={2.5} sx={{ mb: 4 }}>
@@ -67,7 +67,7 @@ export default function MuiCartSummary({ subtotal, onCheckout }: MuiCartSummaryP
                     endIcon={<ArrowIcon />}
                     sx={{
                         py: 2.5,
-                        borderRadius: 4,
+                        borderRadius: 1,
                         fontWeight: 900,
                         fontSize: '1rem',
                         justifyContent: 'space-between',
@@ -82,7 +82,7 @@ export default function MuiCartSummary({ subtotal, onCheckout }: MuiCartSummaryP
                 </Button>
             </Paper>
 
-            <Box sx={{ mt: 3, p: 3, borderRadius: 5, bgcolor: alpha('#0C831F', 0.04), border: '1px solid', borderColor: alpha('#0C831F', 0.1) }}>
+            <Box sx={{ mt: 3, p: 3, borderRadius: 2, bgcolor: alpha('#0C831F', 0.04), border: '1px solid', borderColor: alpha('#0C831F', 0.1) }}>
                 <Stack direction="row" spacing={2} alignItems="center">
                     <Box sx={{ p: 1, bgcolor: 'primary.main', color: 'white', borderRadius: 2, display: 'flex' }}>
                         <VerifiedIcon fontSize="small" />

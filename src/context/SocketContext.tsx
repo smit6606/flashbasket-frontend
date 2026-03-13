@@ -9,7 +9,9 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     const [socket, setSocket] = useState<Socket | null>(null);
 
     useEffect(() => {
-        const socketInstance = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000');
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const socketUrl = apiUrl.replace('/api', '');
+        const socketInstance = io(socketUrl);
         setSocket(socketInstance);
 
         return () => {

@@ -14,6 +14,8 @@ import {
     MenuItem,
     ListItemIcon,
     Divider,
+    alpha,
+    Button,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
@@ -28,6 +30,7 @@ import {
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import MuiBackButton from './MuiBackButton';
 
 const DRAWER_WIDTH = 280;
 
@@ -86,48 +89,96 @@ export default function MuiTopBar({ onMenuClick }: TopBarProps) {
                 </IconButton>
 
                 <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary', display: { xs: 'none', sm: 'block' } }}>
-                        Dashboard
+                    <Typography 
+                        variant="h6" 
+                        component={Link}
+                        href="/"
+                        sx={{ 
+                            fontWeight: 900, 
+                            color: 'primary.main', 
+                            display: { xs: 'none', md: 'block' },
+                            textDecoration: 'none',
+                            '&:hover': { opacity: 0.8 }
+                        }}
+                    >
+                        FlashBasket
                     </Typography>
-                    <Box sx={{ px: 2, py: 0.5, bgcolor: 'slate.50', borderRadius: 2, border: '1px solid #f1f5f9', display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ 
+                        flexGrow: 1, 
+                        maxWidth: 600,
+                        px: 2, 
+                        py: 0.5, 
+                        bgcolor: '#f8fafc', 
+                        borderRadius: '14px', 
+                        border: '1px solid #f1f5f9', 
+                        display: { xs: 'none', md: 'flex' }, 
+                        alignItems: 'center', 
+                        gap: 1.5,
+                        transition: 'all 0.3s',
+                        '&:hover': { bgcolor: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }
+                    }}>
                         <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>Quick Search...</Typography>
-                        <Typography variant="caption" sx={{ ml: 2, px: 1, border: '1px solid #e2e8f0', borderRadius: 1, color: 'text.secondary', fontSize: '0.65rem' }}>Ctrl + K</Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>Search your marketplace...</Typography>
+                        <Box sx={{ ml: 'auto', display: 'flex', gap: 0.5 }}>
+                            <Typography variant="caption" sx={{ px: 1, border: '1px solid #e2e8f0', borderRadius: 1.5, color: 'text.secondary', fontSize: '0.65rem', fontWeight: 700 }}>Ctrl</Typography>
+                            <Typography variant="caption" sx={{ px: 1, border: '1px solid #e2e8f0', borderRadius: 1.5, color: 'text.secondary', fontSize: '0.65rem', fontWeight: 700 }}>K</Typography>
+                        </Box>
                     </Box>
                 </Box>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1.5 } }}>
+                    <IconButton sx={{ display: { xs: 'flex', md: 'none' }, color: 'text.secondary' }}>
+                        <SearchIcon fontSize="small" />
+                    </IconButton>
+
                     <Tooltip title="View Public Website">
-                        <IconButton component={Link} href="/" sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main', bgcolor: 'primary.light' } }}>
+                        <IconButton component={Link} href="/" sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main', bgcolor: alpha('#0C831F', 0.05) } }}>
                             <LaunchIcon fontSize="small" />
                         </IconButton>
                     </Tooltip>
 
-                    <IconButton sx={{ color: 'text.secondary' }}>
-                        <HelpIcon fontSize="small" />
-                    </IconButton>
-
-                    <IconButton sx={{ color: 'text.secondary' }}>
-                        <Badge badgeContent={4} color="primary" sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', height: 16, minWidth: 16 } }}>
+                    <IconButton sx={{ color: 'text.secondary', display: { xs: 'none', sm: 'flex' } }}>
+                        <Badge badgeContent={4} color="primary" sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', height: 16, minWidth: 16, fontWeight: 900 } }}>
                             <BellIcon fontSize="small" />
                         </Badge>
                     </IconButton>
 
-                    <Box sx={{ width: 1, height: 24, bgcolor: 'divider', mx: 1 }} />
+                    <Box sx={{ width: 1, height: 24, bgcolor: 'divider', mx: { xs: 0.5, sm: 1 }, display: { xs: 'none', sm: 'block' } }} />
 
                     <Box 
                         onClick={handleClick}
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', p: 0.5, borderRadius: 2, '&:hover': { bgcolor: 'slate.50' } }}
+                        sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 1.5, 
+                            cursor: 'pointer', 
+                            p: 0.5, 
+                            pr: { xs: 0.5, sm: 2 }, 
+                            borderRadius: '16px', 
+                            bgcolor: { xs: 'transparent', sm: alpha('#0f172a', 0.03) }, 
+                            transition: 'all 0.2s',
+                            '&:hover': { bgcolor: alpha('#0f172a', 0.06) } 
+                        }}
                     >
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.9rem', fontWeight: 800 }}>
+                        <Avatar 
+                            src={user?.profileImage}
+                            sx={{ 
+                                width: { xs: 32, sm: 36 }, 
+                                height: { xs: 32, sm: 36 }, 
+                                bgcolor: 'primary.main', 
+                                fontSize: '0.9rem', 
+                                fontWeight: 900,
+                                boxShadow: '0 4px 12px rgba(12, 131, 31, 0.2)'
+                            }}
+                        >
                             {user?.user_name?.charAt(0).toUpperCase() || 'A'}
                         </Avatar>
-                        <Box sx={{ display: { xs: 'none', sm: 'block' }, textAlign: 'right' }}>
-                            <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary', lineHeight: 1 }}>
+                        <Box sx={{ display: { xs: 'none', sm: 'block' }, textAlign: 'left' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 900, color: '#1e293b', lineHeight: 1, mb: 0.3 }}>
                                 {user?.user_name || 'Administrator'}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                                Online
+                            <Typography variant="caption" sx={{ color: '#0C831F', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.65rem' }}>
+                                {user?.role || 'Admin'}
                             </Typography>
                         </Box>
                     </Box>
@@ -146,7 +197,9 @@ export default function MuiTopBar({ onMenuClick }: TopBarProps) {
                                 filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.1))',
                                 mt: 1.5,
                                 minWidth: 200,
-                                borderRadius: 3,
+                                borderRadius: '16px',
+                                border: '1px solid #f1f5f9',
+                                boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
                                 '& .MuiAvatar-root': {
                                     width: 32,
                                     height: 32,

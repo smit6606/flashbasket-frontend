@@ -12,30 +12,76 @@ import {
     Avatar,
     Stack,
     Divider,
+    IconButton,
+    alpha,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    CircularProgress,
 } from '@mui/material';
-import { Save as SaveIcon } from '@mui/icons-material';
+import { 
+    Save as SaveIcon, 
+    PhotoCamera as CameraIcon,
+    Lock as LockIcon,
+    Security as SecurityIcon,
+    ArrowBack as BackIcon,
+    LocationOn as LocationIcon
+} from '@mui/icons-material';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 
 export default function ProfileEditor() {
-    const { user, setUser } = useAuth() as any;
+    const { user, refreshUser } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [passLoading, setPassLoading] = useState(false);
+    const [openPassModal, setOpenPassModal] = useState(false);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+
     const [formData, setFormData] = useState({
-        user_name: '',
         name: '',
+        shop_name: '',
+        owner_name: '',
+        user_name: '',
         email: '',
         phone: '',
+        address: '',
+        city: '',
+        state: '',
+        country: '',
+        pincode: '',
+        vehicleNumber: '',
+        latitude: '',
+        longitude: ''
+    });
+
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
     });
 
     useEffect(() => {
         if (user) {
             setFormData({
-                user_name: user.user_name || '',
                 name: user.name || '',
+                shop_name: user.shop_name || '',
+                owner_name: user.owner_name || '',
+                user_name: user.user_name || '',
                 email: user.email || '',
                 phone: user.phone || '',
+                address: user.address || '',
+                city: user.city || '',
+                state: user.state || '',
+                country: user.country || '',
+                pincode: user.pincode || '',
+                vehicleNumber: user.vehicleNumber || '',
+                latitude: user.latitude || '',
+                longitude: user.longitude || '',
             });
+            setImagePreview(user.profileImage || null);
         }
     }, [user]);
 
@@ -43,17 +89,58 @@ export default function ProfileEditor() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+    };
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            // Format validation
+            const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                toast.error('Only JPG, PNG and WEBP formats are allowed');
+                return;
+            }
+            // Size validation (2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                toast.error('Image size must be less than 2MB');
+                return;
+            }
+
+            setImageFile(file);
+            const reader = new FileReader();
+            reader.onload = (readEvent) => {
+                setImagePreview(readEvent.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await api.put('/auth/profile', formData);
-            if (res.success) {
-                const updatedUser = { ...user, ...formData };
-                setUser(updatedUser);
-                localStorage.setItem('user', JSON.stringify(updatedUser));
-                toast.success('Your profile has been updated!');
+            const data = new FormData();
+            Object.keys(formData).forEach(key => {
+                const value = (formData as any)[key];
+                if (value !== undefined && value !== null) {
+                    // Skip empty strings for coordinates to avoid backend decimal errors
+                    if ((key === 'latitude' || key === 'longitude') && value === '') {
+                        return;
+                    }
+                    data.append(key, value);
+                }
+            });
+
+            if (imageFile) {
+                data.append('profileImage', imageFile);
             }
+
+            await api.patch('/auth/profile-update', data);
+            await refreshUser();
+            toast.success('Profile Updated');
+            setImageFile(null);
         } catch (err: any) {
             toast.error(err.message || 'Update failed');
         } finally {
@@ -61,104 +148,317 @@ export default function ProfileEditor() {
         }
     };
 
-    return (
-        <Box sx={{ maxWidth: 800, mx: 'auto', p: { xs: 2, md: 4 } }}>
-            <Stack direction="row" spacing={3} alignItems="center" sx={{ mb: 6 }}>
-                <Avatar 
-                    sx={{ 
-                        width: 100, 
-                        height: 100, 
-                        fontSize: '3rem', 
-                        bgcolor: 'primary.main', 
-                        fontWeight: 900,
-                        boxShadow: '0 20px 40px rgba(12, 131, 31, 0.2)'
-                    }}
-                >
-                    {formData.user_name.charAt(0).toUpperCase() || 'U'}
-                </Avatar>
-                <Box>
-                    <Typography variant="h3" sx={{ fontWeight: 900, mb: 0.5, letterSpacing: '-0.02em' }}>Profile Settings</Typography>
-                    <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600 }}>Update your identity and contact information</Typography>
-                </Box>
-            </Stack>
+    const handleUpdatePassword = async () => {
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            toast.error('New passwords do not match');
+            return;
+        }
 
-            <Card elevation={0} sx={{ borderRadius: 8, border: '1px solid #f1f5f9', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.03)' }}>
-                <CardContent sx={{ p: 6 }}>
-                    <form onSubmit={handleSubmit}>
-                        <Grid container spacing={4}>
-                            <Grid size={{ xs: 12, md: 6 }}>
-                                <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Username</Typography>
-                                <TextField
-                                    fullWidth
-                                    name="user_name"
-                                    value={formData.user_name}
-                                    disabled
-                                    variant="outlined"
-                                    InputProps={{ sx: { borderRadius: 4, bgcolor: '#f8fafc' } }}
-                                />
-                            </Grid>
-                            <Grid size={{ xs: 12, md: 6 }}>
-                                <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Full Name</Typography>
-                                <TextField
-                                    fullWidth
-                                    name="name"
-                                    placeholder="Enter your full name"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    required
-                                    InputProps={{ sx: { borderRadius: 4 } }}
-                                />
-                            </Grid>
-                            <Grid size={{ xs: 12 }}>
-                                <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Email Address</Typography>
-                                <TextField
-                                    fullWidth
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    required
-                                    InputProps={{ sx: { borderRadius: 4 } }}
-                                />
-                            </Grid>
-                            <Grid size={{ xs: 12 }}>
-                                <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Mobile Number</Typography>
-                                <TextField
-                                    fullWidth
-                                    name="phone"
-                                    placeholder="+91 XXXXX XXXXX"
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                    InputProps={{ sx: { borderRadius: 4 } }}
-                                />
-                            </Grid>
+        setPassLoading(true);
+        try {
+            await api.patch('/auth/change-password', {
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword
+            });
+            toast.success('Password Updated');
+            setOpenPassModal(false);
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        } catch (err: any) {
+            toast.error(err.message || 'Password update failed');
+        } finally {
+            setPassLoading(false);
+        }
+    };
+
+    const isSeller = user?.role === 'seller';
+    const isDelivery = user?.role === 'delivery';
+
+    return (
+        <Box sx={{ maxWidth: 1000, mx: 'auto', p: { xs: 2, md: 4 } }}>
+            <Box sx={{ mb: 6 }}>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.03em' }}>
+                    Profile <span style={{ color: '#0C831F' }}>Settings</span>
+                </Typography>
+                <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1 }}>
+                    Standardized account management for the FlashBasket platform.
+                </Typography>
+            </Box>
+
+            <Grid container spacing={4}>
+                {/* Left Side: Avatar & Core Info */}
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <Card elevation={0} sx={{ 
+                        borderRadius: 8, 
+                        border: '1px solid #e2e8f0', 
+                        overflow: 'hidden', 
+                        bgcolor: '#f8fafc',
+                        position: 'sticky',
+                        top: 24
+                    }}>
+                        <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                            <Box sx={{ position: 'relative', display: 'inline-block', mb: 3 }}>
+                                <Avatar 
+                                    src={imagePreview || undefined}
+                                    sx={{ 
+                                        width: 150, 
+                                        height: 150, 
+                                        fontSize: '4rem', 
+                                        bgcolor: 'primary.main', 
+                                        fontWeight: 900,
+                                        boxShadow: '0 25px 50px -12px rgba(12, 131, 31, 0.25)',
+                                        border: '6px solid white'
+                                    }}
+                                >
+                                    {formData.name?.charAt(0).toUpperCase() || formData.user_name?.charAt(0).toUpperCase() || 'U'}
+                                </Avatar>
+                                <IconButton
+                                    component="label"
+                                    sx={{
+                                        position: 'absolute',
+                                        bottom: 5,
+                                        right: 5,
+                                        bgcolor: '#0f172a',
+                                        color: 'white',
+                                        '&:hover': { bgcolor: '#1e293b' },
+                                        boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
+                                    }}
+                                >
+                                    <input hidden accept="image/*" type="file" onChange={handleImageChange} />
+                                    <CameraIcon fontSize="small" />
+                                </IconButton>
+                            </Box>
                             
-                            <Grid size={{ xs: 12 }} sx={{ mt: 2 }}>
-                                <Divider sx={{ mb: 4, opacity: 0.5 }} />
-                                <Stack direction="row" spacing={2} justifyContent="flex-end">
+                            <Typography variant="h5" sx={{ fontWeight: 900, mb: 0.5, color: '#1e293b' }}>
+                                {isSeller ? formData.shop_name : formData.name}
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 800, color: 'primary.main', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 3 }}>
+                                {user?.role} Account
+                            </Typography>
+
+                            <Divider sx={{ mb: 3 }} />
+
+                            <Stack spacing={2}>
+                                <Button
+                                    fullWidth
+                                    variant="outlined"
+                                    startIcon={<SecurityIcon />}
+                                    onClick={() => setOpenPassModal(true)}
+                                    sx={{ 
+                                        borderRadius: 1, 
+                                        py: 1.5, 
+                                        fontWeight: 800,
+                                        borderColor: '#e2e8f0',
+                                        color: '#475569',
+                                        textTransform: 'none',
+                                        '&:hover': { bgcolor: '#f1f5f9', borderColor: '#cbd5e1' }
+                                    }}
+                                >
+                                    Change Password
+                                </Button>
+                                <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 600 }}>
+                                    Email cannot be changed after registration for security reasons.
+                                </Typography>
+                            </Stack>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* Right Side: Form Fields */}
+                <Grid size={{ xs: 12, md: 8 }}>
+                    <Card elevation={0} sx={{ borderRadius: 8, border: '1px solid #f1f5f9', boxShadow: '0 20px 40px -8px rgba(0,0,0,0.04)' }}>
+                        <CardContent sx={{ p: { xs: 3, md: 6 } }}>
+                            <form onSubmit={handleSubmit}>
+                                <Stack spacing={5}>
+                                    <Box>
+                                        <Typography variant="h6" sx={{ fontWeight: 900, mb: 3, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                            <Box sx={{ width: 8, height: 24, bgcolor: '#0C831F', borderRadius: 4 }} />
+                                            General Information
+                                        </Typography>
+                                        <Grid container spacing={3}>
+                                            {isSeller ? (
+                                                <>
+                                                    <Grid size={{ xs: 12, md: 6 }}>
+                                                        <TextField fullWidth label="Shop Name" name="shop_name" value={formData.shop_name} onChange={handleChange} required InputProps={{ sx: { borderRadius: 4 } }} />
+                                                    </Grid>
+                                                    <Grid size={{ xs: 12, md: 6 }}>
+                                                        <TextField fullWidth label="Owner Name" name="owner_name" value={formData.owner_name} onChange={handleChange} required InputProps={{ sx: { borderRadius: 4 } }} />
+                                                    </Grid>
+                                                </>
+                                            ) : (
+                                                <Grid size={{ xs: 12, md: 6 }}>
+                                                    <TextField fullWidth label="Full Name" name="name" value={formData.name} onChange={handleChange} required InputProps={{ sx: { borderRadius: 4 } }} />
+                                                </Grid>
+                                            )}
+                                            <Grid size={{ xs: 12, md: 6 }}>
+                                                <TextField fullWidth label="Username" name="user_name" value={formData.user_name} disabled InputProps={{ sx: { borderRadius: 4, bgcolor: '#f8fafc' } }} />
+                                            </Grid>
+                                            <Grid size={{ xs: 12, md: 6 }}>
+                                                <TextField fullWidth label="Email Address" type="email" name="email" value={formData.email} disabled InputProps={{ sx: { borderRadius: 4, bgcolor: '#f8fafc' } }} />
+                                            </Grid>
+                                            <Grid size={{ xs: 12, md: 6 }}>
+                                                <TextField fullWidth label="Phone Number" name="phone" value={formData.phone} onChange={handleChange} required InputProps={{ sx: { borderRadius: 4 } }} />
+                                            </Grid>
+                                            {isDelivery && (
+                                                <Grid size={{ xs: 12, md: 6 }}>
+                                                    <TextField fullWidth label="Vehicle Number" name="vehicleNumber" value={formData.vehicleNumber} onChange={handleChange} required InputProps={{ sx: { borderRadius: 4 } }} />
+                                                </Grid>
+                                            )}
+                                        </Grid>
+                                    </Box>
+
+                                    <Box>
+                                        <Typography variant="h6" sx={{ fontWeight: 900, mb: 3, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                            <Box sx={{ width: 8, height: 24, bgcolor: '#3b82f6', borderRadius: 4 }} />
+                                            Address & Location
+                                        </Typography>
+                                        <Grid container spacing={3}>
+                                            <Grid size={{ xs: 12 }}>
+                                                <TextField fullWidth label="Street Address" name="address" value={formData.address} onChange={handleChange} multiline rows={2} InputProps={{ sx: { borderRadius: 4 } }} />
+                                            </Grid>
+                                            <Grid size={{ xs: 12, md: 6 }}>
+                                                <TextField fullWidth label="City" name="city" value={formData.city} onChange={handleChange} InputProps={{ sx: { borderRadius: 4 } }} />
+                                            </Grid>
+                                            <Grid size={{ xs: 12, md: 6 }}>
+                                                <TextField fullWidth label="State" name="state" value={formData.state} onChange={handleChange} InputProps={{ sx: { borderRadius: 4 } }} />
+                                            </Grid>
+                                            <Grid size={{ xs: 12, md: 6 }}>
+                                                <TextField fullWidth label="Zip / Pincode" name="pincode" value={formData.pincode} onChange={handleChange} InputProps={{ sx: { borderRadius: 4 } }} />
+                                            </Grid>
+                                            <Grid size={{ xs: 12, md: 6 }}>
+                                                <TextField fullWidth label="Country" name="country" value={formData.country} onChange={handleChange} InputProps={{ sx: { borderRadius: 4 } }} />
+                                            </Grid>
+
+                                        </Grid>
+                                    </Box>
+
+                                    {(isSeller || isDelivery) && (
+                                    <Box>
+                                        <Typography variant="h6" sx={{ fontWeight: 900, mb: 3, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                            <Box sx={{ width: 8, height: 24, bgcolor: '#eab308', borderRadius: 4 }} />
+                                            Geospatial Location
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, mb: 3 }}>
+                                            Required for nearby discovery. Automatically detect or enter coordinates manually.
+                                        </Typography>
+                                        <Grid container spacing={3}>
+                                            <Grid size={{ xs: 12, md: 4 }}>
+                                                <TextField fullWidth label="Latitude" name="latitude" value={(formData as any).latitude || ''} onChange={handleChange} InputProps={{ sx: { borderRadius: 4 } }} />
+                                            </Grid>
+                                            <Grid size={{ xs: 12, md: 4 }}>
+                                                <TextField fullWidth label="Longitude" name="longitude" value={(formData as any).longitude || ''} onChange={handleChange} InputProps={{ sx: { borderRadius: 4 } }} />
+                                            </Grid>
+                                            <Grid size={{ xs: 12, md: 4 }}>
+                                                <Button 
+                                                    fullWidth 
+                                                    variant="outlined" 
+                                                    color="secondary"
+                                                    startIcon={<LocationIcon />}
+                                                    onClick={() => {
+                                                        if (navigator.geolocation) {
+                                                            navigator.geolocation.getCurrentPosition((pos) => {
+                                                                setFormData({
+                                                                    ...formData,
+                                                                    latitude: pos.coords.latitude.toString(),
+                                                                    longitude: pos.coords.longitude.toString()
+                                                                } as any);
+                                                                toast.success('Current location detected!');
+                                                            });
+                                                        }
+                                                    }}
+                                                    sx={{ height: '56px', borderRadius: 4, fontWeight: 900 }}
+                                                >
+                                                    Detect Location
+                                                </Button>
+                                            </Grid>
+                                        </Grid>
+                                    </Box>
+                                    )}
+
+                                    <Divider />
+
                                     <Button
                                         type="submit"
                                         variant="contained"
                                         size="large"
                                         disabled={loading}
-                                        startIcon={!loading && <SaveIcon />}
+                                        startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
                                         sx={{ 
-                                            px: 6, 
-                                            py: 1.5, 
+                                            py: 2, 
                                             fontWeight: 900, 
-                                            borderRadius: 4,
+                                            borderRadius: 1, 
                                             bgcolor: '#0f172a',
+                                            boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.3)',
                                             '&:hover': { bgcolor: '#1e293b' }
                                         }}
                                     >
-                                        {loading ? 'Saving Changes...' : 'Save Settings'}
+                                        {loading ? 'Saving Changes...' : 'Update My Profile'}
                                     </Button>
                                 </Stack>
-                            </Grid>
-                        </Grid>
-                    </form>
-                </CardContent>
-            </Card>
+                            </form>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* Change Password Modal */}
+            <Dialog 
+                open={openPassModal} 
+                onClose={() => setOpenPassModal(false)}
+                PaperProps={{ sx: { borderRadius: 1.5, width: '100%', maxWidth: 450, p: 2 } }}
+            >
+                <DialogTitle sx={{ fontWeight: 900, fontSize: '1.5rem', pb: 1 }}>Change Password</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, mb: 4 }}>
+                        Ensure your account stays secure by using a strong, unique password.
+                    </Typography>
+                    <Stack spacing={3}>
+                        <TextField 
+                            fullWidth 
+                            type="password" 
+                            label="Current Password" 
+                            name="currentPassword"
+                            value={passwordData.currentPassword}
+                            onChange={handlePasswordChange}
+                            InputProps={{ sx: { borderRadius: 4 } }} 
+                        />
+                        <TextField 
+                            fullWidth 
+                            type="password" 
+                            label="New Password" 
+                            name="newPassword"
+                            value={passwordData.newPassword}
+                            onChange={handlePasswordChange}
+                            InputProps={{ sx: { borderRadius: 4 } }} 
+                        />
+                        <TextField 
+                            fullWidth 
+                            type="password" 
+                            label="Confirm New Password" 
+                            name="confirmPassword"
+                            value={passwordData.confirmPassword}
+                            onChange={handlePasswordChange}
+                            InputProps={{ sx: { borderRadius: 4 } }} 
+                        />
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ p: 3, pt: 1 }}>
+                    <Button onClick={() => setOpenPassModal(false)} sx={{ fontWeight: 800, color: 'text.secondary' }}>Cancel</Button>
+                    <Button 
+                        onClick={handleUpdatePassword}
+                        variant="contained"
+                        disabled={passLoading}
+                        sx={{ 
+                            borderRadius: 1, 
+                            fontWeight: 900, 
+                            px: 4,
+                            bgcolor: '#0f172a',
+                            '&:hover': { bgcolor: '#1e293b' }
+                        }}
+                    >
+                        {passLoading ? 'Updating...' : 'Set New Password'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

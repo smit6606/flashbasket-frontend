@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation';
 import MuiCartItem from '@/components/mui/MuiCartItem';
 import MuiCartSummary from '@/components/mui/MuiCartSummary';
 import { toast } from 'react-toastify';
+import { useCart } from '@/context/CartContext';
 
 interface CartItemType {
   id: number;
@@ -40,13 +41,12 @@ interface CartItemType {
 
 export default function CartPage() {
   const { user, token } = useAuth();
+  const { refreshCart } = useCart();
   const router = useRouter();
   const [cart, setCart] = useState<{ items: CartItemType[]; subtotal: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (loading) return;
-    
     if (!token) {
       router.push('/login');
       return;
@@ -81,7 +81,8 @@ export default function CartPage() {
       await api.post('/cart/remove', { cartItemId });
       const response = await api.get('/cart');
       setCart(response.data);
-      toast.info('Item removed from cart');
+      await refreshCart();
+      toast.info('Item Removed');
     } catch (err) {
       toast.error('Failed to remove item');
     }
@@ -100,7 +101,7 @@ export default function CartPage() {
   if (!cart || cart.items.length === 0) {
     return (
       <Container maxWidth="sm" sx={{ py: 15, textAlign: 'center' }}>
-        <Paper elevation={0} sx={{ p: 8, borderRadius: 8, border: '2px dashed #e2e8f0', bgcolor: 'transparent' }}>
+        <Paper elevation={0} sx={{ p: 8, borderRadius: 4, border: '2px dashed #e2e8f0', bgcolor: 'transparent' }}>
           <Box sx={{ position: 'relative', display: 'inline-block', mb: 4 }}>
             <Box sx={{ position: 'absolute', inset: -20, bgcolor: alpha('#0C831F', 0.05), borderRadius: '50%', zIndex: 0 }} />
             <CartIcon sx={{ fontSize: 80, color: 'primary.main', position: 'relative', zIndex: 1 }} />
@@ -114,7 +115,7 @@ export default function CartPage() {
             size="large"
             onClick={() => router.push('/')}
             startIcon={<BagIcon />}
-            sx={{ px: 6, py: 1.5, borderRadius: 3, fontWeight: 900 }}
+            sx={{ px: 6, py: 1.5, borderRadius: 1.5, fontWeight: 900 }}
           >
             Start Shopping
           </Button>

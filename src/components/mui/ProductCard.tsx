@@ -13,16 +13,18 @@ import {
     Rating,
     Stack,
     alpha,
+    CircularProgress,
 } from '@mui/material';
 import {
     Add as AddIcon,
     FavoriteBorder as FavoriteIcon,
     ShoppingBagOutlined as BagIcon,
 } from '@mui/icons-material';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import { useRouter } from 'next/navigation';
 
 interface ProductCardProps {
     product: {
@@ -42,7 +44,9 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
     const { user } = useAuth();
+    const { refreshCart } = useCart();
     const router = useRouter();
+    const [addingToCart, setAddingToCart] = React.useState(false);
 
     const handleAddToCart = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -50,6 +54,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             router.push('/login');
             return;
         }
+        setAddingToCart(true);
         try {
             await api.post('/cart/add', {
                 productId: product.id,
@@ -57,9 +62,12 @@ export default function ProductCard({ product }: ProductCardProps) {
                 price: product.price,
                 quantity: 1,
             });
-            toast.success(`${product.productName} added to cart`);
+            await refreshCart();
+            toast.success('Product Added');
         } catch (err: any) {
             toast.error(err.message || 'Failed to add to cart');
+        } finally {
+            setAddingToCart(false);
         }
     };
 
@@ -208,10 +216,10 @@ export default function ProductCard({ product }: ProductCardProps) {
                             }}
                             sx={{
                                 height: 40,
-                                borderRadius: 2,
+                                borderRadius: 1,
                                 bgcolor: product.stock <= 0 ? '#e2e8f0' : '#0f172a',
                                 color: product.stock <= 0 ? 'text.disabled' : 'white',
-                                fontWeight: 800,
+                                fontWeight: 900,
                                 fontSize: '0.8rem',
                                 '&:hover': { bgcolor: product.stock <= 0 ? '#e2e8f0' : '#1e293b' }
                             }}
@@ -221,24 +229,25 @@ export default function ProductCard({ product }: ProductCardProps) {
                         <Button
                             className="add-button"
                             variant="contained"
-                            disabled={product.stock <= 0}
+                            disabled={product.stock <= 0 || addingToCart}
                             onClick={handleAddToCart}
                             sx={{
                                 minWidth: 40,
                                 width: 40,
                                 height: 40,
                                 p: 0,
-                                borderRadius: 2,
-                                bgcolor: 'primary.main',
-                                color: 'white',
-                                boxShadow: '0 4px 12px rgba(12, 131, 31, 0.2)',
+                                borderRadius: 1,
+                                bgcolor: (product.stock <= 0 || addingToCart) ? '#e2e8f0' : 'primary.main',
+                                color: (product.stock <= 0 || addingToCart) ? 'text.disabled' : 'white',
+                                boxShadow: product.stock > 0 && !addingToCart ? '0 8px 20px rgba(12, 131, 31, 0.2)' : 'none',
                                 '&:hover': {
-                                    bgcolor: 'primary.dark',
-                                    transform: 'scale(1.05)',
+                                    bgcolor: (product.stock <= 0 || addingToCart) ? '#e2e8f0' : 'primary.dark',
+                                    transform: addingToCart ? 'none' : 'scale(1.05)',
+                                    boxShadow: product.stock > 0 && !addingToCart ? '0 12px 24px rgba(12, 131, 31, 0.3)' : 'none',
                                 },
                             }}
                         >
-                            <AddIcon />
+                            {addingToCart ? <CircularProgress size={18} color="inherit" /> : <AddIcon />}
                         </Button>
                     </Stack>
                 </Box>

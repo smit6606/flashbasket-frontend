@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box, 
     Typography, 
@@ -34,11 +34,10 @@ import {
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
-import debounce from 'lodash/debounce';
 
-export default function SellerSubcategoriesPage() {
+export default function AdminSubcategoriesPage() {
     // Data states
-    const [categories, setCategories] = useState<any[]>([]); // For dropdown
+    const [categories, setCategories] = useState<any[]>([]); 
     const [subcategories, setSubcategories] = useState<any[]>([]);
     const [totalItems, setTotalItems] = useState(0);
 
@@ -62,7 +61,7 @@ export default function SellerSubcategoriesPage() {
 
     const fetchDropdownData = async () => {
         try {
-            const res = await api.get('/categories?limit=100'); // Get all for dropdown
+            const res = await api.get('/categories?limit=100'); 
             setCategories(res.data.items || []);
         } catch (err) {
             console.error('Failed to load categories', err);
@@ -92,14 +91,17 @@ export default function SellerSubcategoriesPage() {
         }
     };
 
-    // Initial fetch
     useEffect(() => {
         fetchDropdownData();
     }, []);
 
-    // Fetch on filter change
+    // Unified Fetch Logic with Debounce
     useEffect(() => {
-        fetchSubcategories();
+        const timer = setTimeout(() => {
+            fetchSubcategories();
+        }, searchQuery ? 500 : 0);
+
+        return () => clearTimeout(timer);
     }, [page, rowsPerPage, sortBy, sortOrder, statusFilter, categoryFilter, searchQuery]);
 
     const handleCreate = async (e: React.FormEvent) => {
@@ -120,9 +122,9 @@ export default function SellerSubcategoriesPage() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!window.confirm('Are you sure you want to delete this subcategory?')) return;
+        if (!window.confirm('Are you sure? This will delete the subcategory for all users.')) return;
         try {
-            await api.delete(`/categories/subcategory/${id}`); // Assumes endpoint exists
+            await api.delete(`/categories/subcategory/${id}`);
             toast.success('Subcategory deleted');
             fetchSubcategories();
         } catch (err) {
@@ -130,18 +132,17 @@ export default function SellerSubcategoriesPage() {
         }
     };
 
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchQuery(e.target.value);
-        setPage(0);
-    };
-
-    const handlePageChange = (event: unknown, newPage: number) => {
-        setPage(newPage);
-    };
-
-    const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
+    const handleUpdateSubCategory = async (id: number, data: any) => {
+        try {
+            setActionLoading(true);
+            await api.patch(`/categories/subcategory/${id}`, data);
+            toast.success('Subcategory updated');
+            fetchSubcategories();
+        } catch (err) {
+            toast.error('Failed to update subcategory');
+        } finally {
+            setActionLoading(false);
+        }
     };
 
     const handleSort = (field: string) => {
@@ -155,14 +156,10 @@ export default function SellerSubcategoriesPage() {
 
     return (
         <Box sx={{ p: 1, maxWidth: 1200, mx: 'auto' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 6 }}>
-                <Box>
-                    <Typography variant="h3" sx={{ fontWeight: 900, letterSpacing: '-0.02em', color: '#1e293b' }}>Subcategories</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', mt: 1, letterSpacing: '0.1em' }}>
-                        Manage product classifications for your store
-                    </Typography>
-                </Box>
-            </Stack>
+            <Box sx={{ mb: 6 }}>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>Global Subcategories</Typography>
+                <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1 }}>Define detailed sub-collections for a more granular catalog.</Typography>
+            </Box>
 
             <Grid container spacing={4}>
                 <Grid size={{ xs: 12, md: 4 }}>
@@ -212,7 +209,7 @@ export default function SellerSubcategoriesPage() {
                                 <Button
                                     type="submit"
                                     variant="contained"
-                                    disabled={actionLoading || !categoryId}
+                                    disabled={actionLoading}
                                     fullWidth
                                     startIcon={<AddIcon />}
                                     sx={{ 
@@ -234,14 +231,13 @@ export default function SellerSubcategoriesPage() {
 
                 <Grid size={{ xs: 12, md: 8 }}>
                     <Paper elevation={0} sx={{ borderRadius: 6, border: '1px solid #f1f5f9', overflow: 'hidden', bgcolor: 'white' }}>
-                        {/* Search and Filters Header */}
                         <Box sx={{ p: 3, bgcolor: '#ffffff', borderBottom: '1px solid #f1f5f9' }}>
                             <Stack direction="row" spacing={2}>
                                 <TextField
                                     fullWidth
-                                    placeholder="Search subcategories..."
+                                    placeholder="Search mapping collections..."
                                     value={searchQuery}
-                                    onChange={handleSearchChange}
+                                    onChange={(e) => { setSearchQuery(e.target.value); setPage(0); }}
                                     InputProps={{
                                         startAdornment: (
                                             <InputAdornment position="start">
@@ -268,31 +264,8 @@ export default function SellerSubcategoriesPage() {
                                     <FilterIcon sx={{ fontSize: 20 }} />
                                 </IconButton>
                             </Stack>
-
-                            {/* Applied Filters Mini Chips */}
-                            {(categoryFilter !== 'all' || statusFilter !== 'all') && (
-                                <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-                                    {categoryFilter !== 'all' && (
-                                        <Chip 
-                                            label={`Category: ${categories.find(c => c.id.toString() === categoryFilter)?.name}`} 
-                                            size="small" 
-                                            onDelete={() => setCategoryFilter('all')}
-                                            sx={{ fontWeight: 700 }}
-                                        />
-                                    )}
-                                    {statusFilter !== 'all' && (
-                                        <Chip 
-                                            label={`Status: ${statusFilter}`} 
-                                            size="small" 
-                                            onDelete={() => setStatusFilter('all')}
-                                            sx={{ fontWeight: 700 }}
-                                        />
-                                    )}
-                                </Stack>
-                            )}
                         </Box>
 
-                        {/* Filter Menu */}
                         <Menu
                             anchorEl={filterAnchorEl}
                             open={Boolean(filterAnchorEl)}
@@ -334,8 +307,8 @@ export default function SellerSubcategoriesPage() {
                             <Stack spacing={1} sx={{ mt: 1 }}>
                                 {[
                                     { label: 'Name', field: 'name' },
-                                    { label: 'Created Date', field: 'createdAt' },
-                                    { label: 'Status', field: 'status' }
+                                    { label: 'Parent Collection', field: 'category' },
+                                    { label: 'Created Date', field: 'createdAt' }
                                 ].map((s) => (
                                     <Button
                                         key={s.field}
@@ -357,9 +330,9 @@ export default function SellerSubcategoriesPage() {
                         </Menu>
                         
                         <Box sx={{ minHeight: 400, position: 'relative' }}>
-                            {loading && (
-                                <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(255,255,255,0.7)', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>Updating...</Typography>
+                            {(loading || actionLoading) && (
+                                <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(255,255,255,0.7)', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>Processing...</Typography>
                                 </Box>
                             )}
 
@@ -378,16 +351,16 @@ export default function SellerSubcategoriesPage() {
                                             <Avatar sx={{ 
                                                 width: 48, 
                                                 height: 48, 
-                                                bgcolor: alpha('#3b82f6', 0.08), 
-                                                color: '#3b82f6', 
+                                                bgcolor: (sub.status === 'inactive') ? alpha('#64748b', 0.1) : alpha('#3b82f6', 0.08), 
+                                                color: (sub.status === 'inactive') ? '#64748b' : '#3b82f6',
                                                 borderRadius: 3.5,
                                                 border: '1px solid',
-                                                borderColor: alpha('#3b82f6', 0.1)
+                                                borderColor: (sub.status === 'inactive') ? alpha('#64748b', 0.1) : alpha('#3b82f6', 0.1)
                                             }}>
                                                 <SubCategoryIcon sx={{ fontSize: 24 }} />
                                             </Avatar>
                                             <Box>
-                                                <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#1e293b' }}>
+                                                <Typography variant="subtitle1" sx={{ fontWeight: 900, color: sub.status === 'inactive' ? 'text.disabled' : '#1e293b' }}>
                                                     {sub.name}
                                                 </Typography>
                                                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
@@ -405,52 +378,50 @@ export default function SellerSubcategoriesPage() {
                                                         }} 
                                                     />
                                                     <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: 'text.disabled', mx: 0.5 }} />
-                                                    <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                                        {sub.status || 'Active'}
-                                                    </Typography>
+                                                    <Chip 
+                                                        label={(sub.status || 'active').toUpperCase()} 
+                                                        size="small"
+                                                        sx={{ 
+                                                            height: 18,
+                                                            fontSize: '0.6rem',
+                                                            fontWeight: 900,
+                                                            bgcolor: sub.status === 'inactive' ? alpha('#ef4444', 0.1) : alpha('#0C831F', 0.1),
+                                                            color: sub.status === 'inactive' ? '#ef4444' : '#0C831F',
+                                                            borderRadius: 1.5
+                                                        }}
+                                                    />
                                                 </Stack>
                                             </Box>
                                         </Stack>
                                         
-                                        <IconButton 
-                                            size="small" 
-                                            color="error" 
-                                            onClick={() => handleDelete(sub.id)}
-                                            sx={{ opacity: 0.3, '&:hover': { opacity: 1, bgcolor: alpha('#ef4444', 0.05) } }}
-                                        >
-                                            <DeleteIcon fontSize="small" />
-                                        </IconButton>
+                                        <Stack direction="row" spacing={1}>
+                                            <Button 
+                                                size="small" 
+                                                variant="outlined" 
+                                                color={sub.status === 'inactive' ? 'success' : 'warning'}
+                                                onClick={() => handleUpdateSubCategory(sub.id, { status: sub.status === 'inactive' ? 'active' : 'inactive' })}
+                                                sx={{ borderRadius: 2, fontWeight: 900, fontSize: '0.7rem', textTransform: 'none' }}
+                                            >
+                                                {sub.status === 'inactive' ? 'Activate' : 'Hide / Inactivate'}
+                                            </Button>
+                                            <IconButton size="small" color="error" onClick={() => handleDelete(sub.id)} sx={{ opacity: 0.5, '&:hover': { opacity: 1, bgcolor: alpha('#ef4444', 0.05) } }}>
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        </Stack>
                                     </Box>
                                     {index < subcategories.length - 1 && <Divider sx={{ borderStyle: 'solid', borderColor: '#f8fafc', mx: 4 }} />}
                                 </Box>
                             ))}
-                            
-                            {!loading && subcategories.length === 0 && (
-                                <Box sx={{ py: 12, textAlign: 'center', px: 4 }}>
-                                    <Avatar sx={{ width: 64, height: 64, mx: 'auto', mb: 2, bgcolor: '#f1f5f9', color: 'text.disabled' }}>
-                                        <SearchIcon sx={{ fontSize: 32 }} />
-                                    </Avatar>
-                                    <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 800 }}>No subcategories found</Typography>
-                                    <Typography variant="body2" sx={{ color: 'text.disabled', mt: 1, fontWeight: 600 }}>Try adjusting your filters or search query.</Typography>
-                                </Box>
-                            )}
                         </Box>
 
                         <TablePagination
                             component="div"
                             count={totalItems}
                             page={page}
-                            onPageChange={handlePageChange}
+                            onPageChange={(e, p) => setPage(p)}
                             rowsPerPage={rowsPerPage}
-                            onRowsPerPageChange={handleRowsPerPageChange}
-                            sx={{
-                                borderTop: '1px solid #f1f5f9',
-                                '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                                    fontWeight: 700,
-                                    fontSize: '0.75rem',
-                                    color: 'text.secondary'
-                                }
-                            }}
+                            onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+                            sx={{ borderTop: '1px solid #f1f5f9' }}
                         />
                     </Paper>
                 </Grid>

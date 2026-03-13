@@ -1,4 +1,18 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const getApiUrl = () => {
+    if (typeof window === 'undefined') return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    
+    const hostname = window.location.hostname;
+    
+    if (hostname.includes('devtunnels.ms')) {
+        // If we're on a dev tunnel like xxxx-3000.inc1.devtunnels.ms
+        // The backend is likely at xxxx-5000.inc1.devtunnels.ms
+        return `https://${hostname.replace('-3000', '-5000')}/api`;
+    }
+    
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+};
+
+const API_URL = getApiUrl();
 
 type FetchOptions = RequestInit & {
   params?: Record<string, string | number>;
@@ -48,7 +62,9 @@ export const apiFetch = async (endpoint: string, options: FetchOptions = {}) => 
   }
 
   if (!response.ok) {
-    throw new Error(data.message || data.error || 'Something went wrong');
+    const error: any = new Error(data.message || data.error || 'Something went wrong');
+    error.response = { data };
+    throw error;
   }
 
   return data;

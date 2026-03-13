@@ -19,6 +19,7 @@ import {
     Skeleton,
     Avatar,
     Rating,
+    CircularProgress,
 } from '@mui/material';
 import {
     NavigateNext as NextIcon,
@@ -33,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import Link from 'next/link';
@@ -59,8 +61,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const { id } = use(params);
     const router = useRouter();
     const { user } = useAuth();
+    const { refreshCart } = useCart();
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
+    const [addingToCart, setAddingToCart] = useState(false);
     const [quantity, setQuantity] = useState(1);
     const [mainImage, setMainImage] = useState('');
 
@@ -87,6 +91,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             router.push('/login');
             return;
         }
+        setAddingToCart(true);
         try {
             await api.post('/cart/add', {
                 productId: product?.id,
@@ -94,9 +99,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 price: product?.price,
                 quantity: quantity
             });
-            toast.success(`${product?.productName} added to cart!`);
+            await refreshCart();
+            toast.success('Product Added');
         } catch (error: any) {
             toast.error(error.message || 'Failed to add to cart');
+        } finally {
+            setAddingToCart(false);
         }
     };
 
@@ -123,7 +131,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     if (!product) return (
         <Container sx={{ py: 20, textAlign: 'center' }}>
             <Typography variant="h4" sx={{ fontWeight: 900, mb: 2 }}>Product Not Found</Typography>
-            <Button variant="contained" component={Link} href="/" sx={{ borderRadius: 4 }}>Go Back Home</Button>
+            <Button variant="contained" component={Link} href="/" sx={{ borderRadius: '16px', fontWeight: 900, px: 4 }}>Go Back Home</Button>
         </Container>
     );
 
@@ -140,7 +148,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <Grid size={{ xs: 12, md: 6.5 }}>
                     <Box sx={{ position: 'sticky', top: 100 }}>
                         <Paper elevation={0} sx={{
-                            borderRadius: 8,
+                            borderRadius: '32px',
                             overflow: 'hidden',
                             bgcolor: '#f8fafc',
                             border: '1px solid #f1f5f9',
@@ -167,7 +175,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                         minWidth: 100,
                                         width: 100,
                                         height: 100,
-                                        borderRadius: 4,
+                                        borderRadius: '12px',
                                         overflow: 'hidden',
                                         cursor: 'pointer',
                                         border: '2px solid',
@@ -220,7 +228,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             <Chip label="SPECIAL PRICE" size="small" sx={{ fontWeight: 900, bgcolor: '#ffeded', color: '#ff4d4d', borderRadius: 2 }} />
                         </Stack>
 
-                        <Paper elevation={0} sx={{ p: 4, borderRadius: 6, bgcolor: '#f8fafc', border: '1px solid #f1f5f9', mb: 6 }}>
+                        <Paper elevation={0} sx={{ p: 4, borderRadius: '24px', bgcolor: '#f8fafc', border: '1px solid #f1f5f9', mb: 6 }}>
                             <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', mb: 2, display: 'block' }}>Store Profile</Typography>
                             <Stack direction="row" spacing={2} alignItems="center" component={Link} href={`/sellers/${product.Seller?.id}`} sx={{ textDecoration: 'none', color: 'inherit' }}>
                                 <Avatar sx={{ bgcolor: 'primary.main', width: 48, height: 48 }}><StoreIcon /></Avatar>
@@ -246,7 +254,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     display: 'flex',
                                     alignItems: 'center',
                                     bgcolor: 'white',
-                                    borderRadius: 4,
+                                    borderRadius: '16px',
                                     p: 0.5,
                                     border: '1.5px solid #0C831F',
                                     opacity: product.stock <= 0 ? 0.5 : 1,
@@ -260,21 +268,26 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     fullWidth
                                     variant="contained"
                                     size="large"
-                                    disabled={product.stock <= 0}
-                                    startIcon={product.stock > 0 ? <CartIcon /> : null}
+                                    disabled={product.stock <= 0 || addingToCart}
+                                    startIcon={product.stock > 0 && !addingToCart ? <CartIcon /> : null}
                                     onClick={addToCart}
                                     sx={{
-                                        borderRadius: 4,
+                                        borderRadius: '16px',
                                         py: 2,
                                         fontWeight: 900,
                                         fontSize: '1.1rem',
-                                        bgcolor: product.stock <= 0 ? '#e2e8f0' : 'primary.main',
-                                        color: product.stock <= 0 ? 'text.disabled' : 'white',
-                                        boxShadow: product.stock > 0 ? '0 12px 24px rgba(12, 131, 31, 0.25)' : 'none',
-                                        '&:hover': { bgcolor: product.stock <= 0 ? '#e2e8f0' : 'primary.dark' }
+                                        bgcolor: (product.stock <= 0 || addingToCart) ? '#e2e8f0' : 'primary.main',
+                                        color: (product.stock <= 0 || addingToCart) ? 'text.disabled' : 'white',
+                                        boxShadow: product.stock > 0 && !addingToCart ? '0 12px 24px rgba(12, 131, 31, 0.25)' : 'none',
+                                        '&:hover': { bgcolor: (product.stock <= 0 || addingToCart) ? '#e2e8f0' : 'primary.dark' }
                                     }}
                                 >
-                                    {product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+                                    {addingToCart ? (
+                                        <Stack direction="row" spacing={1} alignItems="center">
+                                            <CircularProgress size={20} color="inherit" />
+                                            <Typography variant="body1" sx={{ fontWeight: 900 }}>Adding...</Typography>
+                                        </Stack>
+                                    ) : (product.stock <= 0 ? 'Out of Stock' : 'Add to Cart')}
                                 </Button>
                             </Box>
 
