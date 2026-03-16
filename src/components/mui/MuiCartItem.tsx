@@ -11,6 +11,7 @@ import {
     Stack,
     alpha,
 } from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Add as AddIcon,
     Remove as RemoveIcon,
@@ -22,13 +23,18 @@ interface MuiCartItemProps {
         id: number;
         quantity: number;
         price: string;
+        discountPercent?: number;
+        discountAmount?: string | number;
+        originalPrice?: string | number;
         itemTotal: string;
-        Product: {
+        productName?: string;
+        images?: string[];
+        Seller?: {
+            shop_name: string;
+        } | null;
+        Product?: {
             productName: string;
             images: string[];
-        } | null;
-        Seller: {
-            shop_name: string;
         } | null;
     };
     onUpdateQuantity: (cartItemId: number, newQuantity: number) => void;
@@ -37,20 +43,27 @@ interface MuiCartItemProps {
 
 export default function MuiCartItem({ item, onUpdateQuantity, onRemove }: MuiCartItemProps) {
     return (
-        <Paper
-            elevation={0}
-            sx={{
-                p: { xs: 2, sm: 2.5 },
-                borderRadius: 1.5,
-                border: '1px solid #f1f5f9',
-                display: 'flex',
-                gap: { xs: 2, sm: 3 },
-                alignItems: { xs: 'flex-start', sm: 'center' },
-                flexDirection: { xs: 'row', sm: 'row' },
-                '&:hover': { bgcolor: '#f8fafc' },
-                transition: 'background-color 0.2s',
-            }}
+        <motion.div
+            layout
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.3 }}
         >
+            <Paper
+                elevation={0}
+                sx={{
+                    p: { xs: 2, sm: 2.5 },
+                    borderRadius: 1.5,
+                    border: '1px solid #f1f5f9',
+                    display: 'flex',
+                    gap: { xs: 2, sm: 3 },
+                    alignItems: { xs: 'flex-start', sm: 'center' },
+                    flexDirection: { xs: 'row', sm: 'row' },
+                    '&:hover': { bgcolor: '#f8fafc', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' },
+                    transition: 'all 0.2s',
+                }}
+            >
             <Box
                 sx={{
                     width: { xs: 70, sm: 90 },
@@ -66,8 +79,8 @@ export default function MuiCartItem({ item, onUpdateQuantity, onRemove }: MuiCar
                 }}
             >
                 <img
-                    src={item.Product?.images?.[0] || 'https://placehold.co/200x200?text=Item'}
-                    alt={item.Product?.productName || 'Product'}
+                    src={(item.Product?.images?.[0] || item.images?.[0]) || 'https://placehold.co/200x200?text=Item'}
+                    alt={(item.Product?.productName || item.productName) || 'Product'}
                     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />
             </Box>
@@ -99,15 +112,17 @@ export default function MuiCartItem({ item, onUpdateQuantity, onRemove }: MuiCar
                         WebkitBoxOrient: 'vertical',
                     }}
                 >
-                    {item.Product?.productName || 'Unknown Product'}
+                    {item.Product?.productName || item.productName || 'Unknown Product'}
                 </Typography>
 
                 <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
                         <Typography variant="h6" sx={{ fontWeight: 900, color: 'text.primary', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>₹{item.price}</Typography>
-                        <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.secondary', fontWeight: 700, opacity: 0.6 }}>
-                            ₹{Number(item.price) + 40}
-                        </Typography>
+                        {item.originalPrice && Number(item.originalPrice) > Number(item.price) ? (
+                            <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.secondary', fontWeight: 700, opacity: 0.6 }}>
+                                ₹{item.originalPrice}
+                            </Typography>
+                        ) : null}
                     </Box>
 
                     <Stack direction="row" spacing={2} alignItems="center" sx={{ alignSelf: { xs: 'flex-end', sm: 'auto' } }}>
@@ -165,5 +180,6 @@ export default function MuiCartItem({ item, onUpdateQuantity, onRemove }: MuiCar
                 </Box>
             </Box>
         </Paper>
+    </motion.div>
     );
 }

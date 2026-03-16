@@ -26,6 +26,8 @@ import {
     Home as HomeIcon,
     Map as DeliveryIcon,
     AccountBalanceWallet as EarningsIcon,
+    History as HistoryIcon,
+    LocalShipping as ActiveIcon,
 } from '@mui/icons-material';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -47,31 +49,33 @@ export default function MuiSidebar({ mobileOpen, onClose }: SidebarProps) {
         admin: [
             { name: 'Public Home', path: '/', icon: <HomeIcon /> },
             { name: 'Dashboard', path: '/admin', icon: <DashboardIcon /> },
-            { name: 'Manage Users', path: '/admin/users', icon: <PeopleIcon /> },
-            { name: 'Manage Categories', path: '/admin/categories', icon: <CategoryIcon /> },
-            { name: 'Manage Subcategories', path: '/admin/subcategories', icon: <CategoryIcon /> },
-            { name: 'Manage Products', path: '/admin/products', icon: <InventoryIcon /> },
-            { name: 'Manage Orders', path: '/admin/orders', icon: <OrdersIcon /> },
-            { name: 'Manage Sellers', path: '/admin/sellers', icon: <StoreIcon /> },
-            { name: 'Manage Delivery', path: '/admin/delivery', icon: <DeliveryIcon /> },
+            { name: 'Orders', path: '/admin/orders', icon: <OrdersIcon /> },
+            { name: 'Users', path: '/admin/users', icon: <PeopleIcon /> },
+            { name: 'Sellers', path: '/admin/sellers', icon: <StoreIcon /> },
+            { name: 'Delivery Drivers', path: '/admin/delivery', icon: <ActiveIcon /> },
+            { name: 'Categories', path: '/admin/categories', icon: <CategoryIcon /> },
+            { name: 'Products', path: '/admin/products', icon: <InventoryIcon /> },
             { name: 'Reports', path: '/admin/analytics', icon: <AnalyticsIcon /> },
             { name: 'Settings', path: '/admin/settings', icon: <SettingsIcon /> },
         ],
         seller: [
             { name: 'Public Home', path: '/', icon: <HomeIcon /> },
-            { name: 'Market Overview', path: '/seller', icon: <DashboardIcon /> },
-            { name: 'Categories', path: '/seller/categories', icon: <CategoryIcon /> },
-            { name: 'Subcategories', path: '/seller/subcategories', icon: <CategoryIcon /> },
-            { name: 'My Catalog', path: '/seller/products', icon: <InventoryIcon /> },
+            { name: 'Dashboard', path: '/seller', icon: <DashboardIcon /> },
             { name: 'Live Orders', path: '/seller/orders', icon: <OrdersIcon /> },
-            { name: 'Sales Insights', path: '/seller/analytics', icon: <AnalyticsIcon /> },
-            { name: 'Store Account', path: '/seller/profile', icon: <SettingsIcon /> },
+            { name: 'Past Orders', path: '/seller/history', icon: <HistoryIcon /> },
+            { name: 'Categories', path: '/seller/categories', icon: <CategoryIcon /> },
+            { name: 'Sub Categories', path: '/seller/subcategories', icon: <CategoryIcon /> },
+            { name: 'My Catalog', path: '/seller/catalog', icon: <InventoryIcon /> },
+            { name: 'Sales Insights', path: '/seller/sales', icon: <AnalyticsIcon /> },
+            { name: 'Store Account', path: '/seller/account', icon: <SettingsIcon /> },
         ],
         delivery: [
             { name: 'Public Home', path: '/', icon: <HomeIcon /> },
             { name: 'Driver Dashboard', path: '/delivery', icon: <DeliveryIcon /> },
-            { name: 'Active Deliveries', path: '/delivery/trips', icon: <OrdersIcon /> },
+            { name: 'Active Trips', path: '/delivery/trips', icon: <ActiveIcon /> },
+            { name: 'Past Orders', path: '/delivery/history', icon: <HistoryIcon /> },
             { name: 'Earning Ledger', path: '/delivery/earnings', icon: <EarningsIcon /> },
+            { name: 'My Account', path: '/delivery/profile', icon: <SettingsIcon /> },
         ],
         user: [
             { name: 'Public Home', path: '/', icon: <HomeIcon /> },
@@ -133,31 +137,51 @@ export default function MuiSidebar({ mobileOpen, onClose }: SidebarProps) {
                 </Typography>
                 <List sx={{ gap: 0.5, display: 'flex', flexDirection: 'column' }}>
                     {links.map((link) => {
-                        const isActive = pathname === link.path || (link.path !== '/' && pathname.startsWith(link.path));
+                        // Logic to ensure only one tab is active
+                        // Root paths like /admin, /seller, /delivery should only be active on exact match
+                        // Other paths can be active if they match the start of the current pathname
+                        const dashboardPaths = ['/admin', '/seller', '/delivery', '/user/dashboard', '/seller/dashboard'];
+                        const isActive = dashboardPaths.includes(link.path) || link.path === '/'
+                            ? pathname === link.path
+                            : pathname.startsWith(link.path);
+
                         return (
-                            <ListItem key={link.name} disablePadding>
+                            <ListItem key={link.name} disablePadding sx={{ px: 1 }}>
                                 <ListItemButton
                                     component={Link}
                                     href={link.path}
                                     onClick={onClose}
                                     sx={{
-                                        borderRadius: '14px',
+                                        borderRadius: '12px',
                                         mb: 0.5,
+                                        py: 1.5,
                                         bgcolor: isActive ? 'primary.main' : 'transparent',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                         '&:hover': {
-                                            bgcolor: isActive ? 'primary.main' : 'rgba(255,255,255,0.05)',
+                                            bgcolor: isActive ? 'primary.main' : 'rgba(255,255,255,0.08)',
+                                            transform: isActive ? 'none' : 'translateX(4px)',
                                         },
-                                        color: isActive ? 'white' : 'rgba(255,255,255,0.6)',
+                                        color: isActive ? 'white' : 'rgba(255,255,255,0.7)',
+                                        boxShadow: isActive ? '0 8px 20px rgba(12, 131, 31, 0.25)' : 'none',
                                     }}
                                 >
-                                    <ListItemIcon sx={{ color: 'inherit', minWidth: 40, fontSize: '1.2rem' }}>
+                                    <ListItemIcon
+                                        sx={{
+                                            color: 'inherit',
+                                            minWidth: 42,
+                                            fontSize: '1.25rem',
+                                            transition: 'all 0.3s',
+                                            transform: isActive ? 'scale(1.1)' : 'scale(1)',
+                                        }}
+                                    >
                                         {link.icon}
                                     </ListItemIcon>
                                     <ListItemText
                                         primary={link.name}
                                         primaryTypographyProps={{
-                                            fontWeight: isActive ? 800 : 600,
-                                            fontSize: '0.9rem'
+                                            fontWeight: isActive ? 900 : 600,
+                                            fontSize: '0.925rem',
+                                            letterSpacing: isActive ? '0.01em' : '0',
                                         }}
                                     />
                                 </ListItemButton>
@@ -170,7 +194,7 @@ export default function MuiSidebar({ mobileOpen, onClose }: SidebarProps) {
             {/* Sidebar Footer (User Info) */}
             <Box sx={{ p: 3, borderTop: '1px solid rgba(255,255,255,0.05)', bgcolor: 'rgba(15, 23, 42, 0.4)' }}>
                 <Stack direction="row" spacing={2} alignItems="center">
-                    <Avatar 
+                    <Avatar
                         src={user?.profileImage}
                         sx={{ bgcolor: 'primary.dark', fontWeight: 800, fontSize: '0.9rem' }}
                     >

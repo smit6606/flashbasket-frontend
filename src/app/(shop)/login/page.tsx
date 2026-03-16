@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import {
   Box,
   Button,
@@ -16,30 +16,47 @@ import {
   Stack,
   Container,
 } from '@mui/material';
+import { motion } from 'framer-motion';
 import {
   Visibility,
   VisibilityOff,
   Email as EmailIcon,
   ShoppingBag as LogoIcon,
 } from '@mui/icons-material';
+import LoadingButton from '@/components/mui/LoadingButton';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { normalizePhoneForBackend } from '@/lib/phoneUtils';
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress /></Box>}>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const { login, user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || null;
 
   React.useEffect(() => {
     if (!authLoading && user) {
-      if (user.role === 'admin') router.replace('/admin');
-      else if (user.role === 'seller') router.replace('/seller');
-      else if (user.role === 'delivery') router.replace('/delivery');
-      else router.replace('/');
+      if (callbackUrl) {
+        router.replace(callbackUrl);
+      } else {
+        if (user.role === 'admin') router.replace('/admin');
+        else if (user.role === 'seller') router.replace('/seller');
+        else if (user.role === 'delivery') router.replace('/delivery');
+        else router.replace('/');
+      }
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, callbackUrl]);
 
   const [formData, setFormData] = useState({
     identifier: '',
@@ -54,17 +71,38 @@ export default function LoginPage() {
     e.preventDefault();
     if (loading) return;
     setError('');
+
+    // 1️⃣ Validation Errors (Priority 1)
+    if (!formData.identifier.trim()) {
+      setError('Email or Phone Number is required');
+      toast.warning('Email or Phone Number is required');
+      return;
+    }
+    if (!formData.password) {
+      setError('Password is required');
+      toast.warning('Password is required');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const response = await api.post('/auth/login', formData);
+      const payload = {
+        ...formData,
+        identifier: !formData.identifier.includes('@') && /^\d+$/.test(formData.identifier.replace(/[^\d]/g, ''))
+          ? normalizePhoneForBackend(formData.identifier)
+          : formData.identifier
+      };
+      
+      const response = await api.post('/auth/login', payload);
       const { user } = response.data;
       login(response.data);
-      toast.success(`Welcome, ${user.user_name}!`);
+      toast.success(`Welcome back, ${user.user_name}!`);
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Invalid Credentials';
+      // 2️⃣ Invalid Credentials / 3️⃣ Server Errors handled here
+      const msg = err.response?.data?.message || 'Invalid email or password';
       setError(msg);
-      toast.error(msg);
+      toast.error(msg, { toastId: 'login-error' });
     } finally {
       setLoading(false);
     }
@@ -93,6 +131,10 @@ export default function LoginPage() {
       {/* Left Side: Image/Branding */}
       <Grid
         size={{ xs: 0, sm: 4, md: 6 }}
+        component={motion.div}
+        initial={{ opacity: 0, x: -50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         sx={{
           display: { xs: 'none', sm: 'flex' },
           backgroundImage: 'url(/login_side_background_1773142649985.png)',
@@ -139,30 +181,36 @@ export default function LoginPage() {
             alignItems: 'flex-start',
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 6 }}>
-            <Box
-              sx={{
-                bgcolor: 'primary.main',
-                color: 'white',
-                px: 1,
-                py: 1,
-                borderRadius: 2,
-                display: 'flex',
-              }}
-            >
-              <LogoIcon fontSize="medium" />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 6 }}>
+              <Box
+                sx={{
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                  px: 1,
+                  py: 1,
+                  borderRadius: 2,
+                  display: 'flex',
+                }}
+              >
+                <LogoIcon fontSize="medium" />
+              </Box>
+              <Typography variant="h5" sx={{ fontWeight: 900, color: 'text.primary', tracking: '-0.02em' }}>
+                FlashBasket
+              </Typography>
             </Box>
-            <Typography variant="h5" sx={{ fontWeight: 900, color: 'text.primary', tracking: '-0.02em' }}>
-              FlashBasket
-            </Typography>
-          </Box>
 
-          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, tracking: '-0.02em' }}>
-            Welcome back
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mb: 4 }}>
-            Please enter your details to sign in
-          </Typography>
+            <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, tracking: '-0.02em' }}>
+              Welcome back
+            </Typography>
+            <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mb: 4 }}>
+              Please enter your details to sign in
+            </Typography>
+          </motion.div>
 
           {/* Toasts handle feedback, removed static alert for cleaner UI */}
 
@@ -170,6 +218,7 @@ export default function LoginPage() {
             <Stack spacing={3}>
               <TextField
                 select
+                id="login-role"
                 label="Account Type"
                 name="role"
                 value={formData.role}
@@ -185,6 +234,7 @@ export default function LoginPage() {
               <TextField
                 required
                 fullWidth
+                id="login-identifier"
                 label="Email or Phone Number"
                 name="identifier"
                 autoComplete="email"
@@ -203,6 +253,7 @@ export default function LoginPage() {
               <TextField
                 required
                 fullWidth
+                id="login-password"
                 name="password"
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
@@ -230,12 +281,13 @@ export default function LoginPage() {
               </Typography>
             </Box>
 
-            <Button
+            <LoadingButton
               type="submit"
               fullWidth
               variant="contained"
               size="large"
-              disabled={loading}
+              loading={loading}
+              loadingText="Signing In..."
               sx={{
                 mt: 4,
                 mb: 2,
@@ -247,13 +299,8 @@ export default function LoginPage() {
                 boxShadow: '0 8px 16px rgba(12, 131, 31, 0.2)',
               }}
             >
-              {loading ? (
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <CircularProgress size={20} color="inherit" />
-                  <Typography variant="body1" sx={{ fontWeight: 900 }}>Logging in...</Typography>
-                </Stack>
-              ) : 'Sign In'}
-            </Button>
+              Sign In
+            </LoadingButton>
 
             <Box sx={{ textAlign: 'center', mt: 2 }}>
               <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>

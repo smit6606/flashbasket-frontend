@@ -13,7 +13,7 @@ export default function MuiBreadcrumbs() {
     // Don't show on Home page
     if (pathname === '/') return null;
 
-    const pathnames = pathname.split('/').filter((x) => x);
+    const pathnames = pathname.split('/').filter((x) => x && x.toLowerCase() !== 'user');
 
     return (
         <Box 

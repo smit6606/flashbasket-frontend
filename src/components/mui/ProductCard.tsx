@@ -13,7 +13,10 @@ import {
     Rating,
     Stack,
     CircularProgress,
+    useMediaQuery,
+    alpha,
 } from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Add as AddIcon,
     Favorite as FavoriteFilledIcon,
@@ -34,6 +37,9 @@ interface ProductCardProps {
         id: number;
         productName: string;
         price: string;
+        originalPrice?: string | number;
+        discountPercent?: number;
+        finalPrice?: string | number;
         stock: number;
         images: string[];
         unit?: string;
@@ -47,7 +53,7 @@ interface ProductCardProps {
     };
 }
 
-const StyledCard = styled(Card)(({ theme }) => ({
+const StyledCard = styled(motion.create(Card))(({ theme }) => ({
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
@@ -56,14 +62,12 @@ const StyledCard = styled(Card)(({ theme }) => ({
     borderRadius: '20px',
     border: '1px solid #f1f5f9',
     backgroundColor: '#fff',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
     overflow: 'hidden',
     '&:hover': {
-        transform: 'translateY(-10px)',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.06)',
         borderColor: theme.palette.primary.main,
         '& .card-image': {
-            transform: 'scale(1.08)',
+            transform: 'scale(1.1) rotate(2deg)',
         },
         '& .action-buttons': {
             opacity: 1,
@@ -95,6 +99,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     const { isFavourite, toggleFavourite } = useFavourites();
     const router = useRouter();
     const [updating, setUpdating] = React.useState(false);
+    const isBelow375 = useMediaQuery('(max-width:375px)');
 
     const cartItem = getItemFromCart(product.id);
     const isFav = isFavourite(product.id);
@@ -142,42 +147,63 @@ export default function ProductCard({ product }: ProductCardProps) {
         toggleFavourite(product.id);
     };
 
-    const getRealisticDiscount = (id: number, price: number) => {
-        // Pseudo-random discount based on ID to remain stable across renders
-        const seed = id * 1337;
-        const discountPercentage = ((seed % 26) + 5) / 100; // 5% to 30%
-        const discountAmount = price * discountPercentage;
-        // Round to nearest 5 or 10 for realism
-        return Math.max(10, Math.round(discountAmount / 5) * 5);
+    const finalPrice = Number(product.finalPrice || product.price);
+    const originalPrice = Number(product.originalPrice || finalPrice);
+    const discountPercent = product.discountPercent || 0;
+    const discountAmount = originalPrice - finalPrice;
+
+    const getStableProductImage = (name: string, id: number) => {
+        const lowerName = name.toLowerCase();
+        
+        // Keyword based high-quality static images
+        if (lowerName.includes('apple') || lowerName.includes('fruit')) return 'https://images.unsplash.com/photo-1560806887-1e4cd0b6bccb?w=400';
+        if (lowerName.includes('milk') || lowerName.includes('dairy')) return 'https://images.unsplash.com/photo-1563636619-e910ef2a844b?w=400';
+        if (lowerName.includes('bread') || lowerName.includes('bakery')) return 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400';
+        if (lowerName.includes('drink') || lowerName.includes('cola') || lowerName.includes('soda')) return 'https://images.unsplash.com/photo-1581009146145-b5ef03a74e7f?w=400';
+        if (lowerName.includes('shampoo') || lowerName.includes('soap') || lowerName.includes('beauty')) return 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400';
+        if (lowerName.includes('chips') || lowerName.includes('snack')) return 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=400';
+        if (lowerName.includes('veg') || lowerName.includes('tomato') || lowerName.includes('onion')) return 'https://images.unsplash.com/photo-1518843875459-f738682238a6?w=400';
+        if (lowerName.includes('egg')) return 'https://images.unsplash.com/photo-1498654077810-12c21d4d6dc3?w=400';
+        if (lowerName.includes('choco')) return 'https://images.unsplash.com/photo-1511381939415-e44015466834?w=400';
+
+        // Deterministic fallback based on ID
+        const fallbacks = [
+            'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400',
+            'https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8?w=400',
+            'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=400',
+            'https://images.unsplash.com/photo-1516594798947-e65505dbb29d?w=400'
+        ];
+        return fallbacks[id % fallbacks.length];
     };
 
-    const discountAmount = getRealisticDiscount(product.id, Number(product.price));
-    const originalPrice = Number(product.price) + discountAmount;
-
     return (
-        <StyledCard onClick={() => router.push(`/products/${product.id}`)}>
-            <ImageContainer sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-                {Math.round((discountAmount/originalPrice)*100) > 0 && (
+        <StyledCard 
+            onClick={() => router.push(`/products/${product.id}`)}
+            whileHover={{ y: -8, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.12)' }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+        >
+            <ImageContainer sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: isBelow375 ? 1 : 2 }}>
+                {discountPercent > 0 && (
                     <Box sx={{ 
                         position: 'absolute', 
                         top: 0, 
                         left: 0, 
-                        bgcolor: '#0C831F', 
+                        bgcolor: '#0C831F',
                         color: 'white', 
                         px: 1, 
                         py: 0.5, 
-                        borderRadius: '0 0 8px 0',
+                        borderRadius: '0 0 12px 0',
                         zIndex: 12,
                         boxShadow: '2px 2px 8px rgba(0,0,0,0.1)'
                     }}>
-                        <Typography variant="caption" sx={{ fontWeight: 900, fontSize: '0.65rem' }}>
-                            {Math.floor((discountAmount/originalPrice)*100)}% OFF
+                        <Typography variant="caption" sx={{ fontWeight: 900, fontSize: '0.7rem' }}>
+                            {discountPercent}% OFF
                         </Typography>
                     </Box>
                 )}
                 <CardMedia
                     component="img"
-                    image={product.images?.[0] || 'https://placehold.co/400x400?text=Product'}
+                    image={product.images?.[0] || getStableProductImage(product.productName, product.id)}
                     alt={product.productName}
                     className="card-image"
                     sx={{
@@ -245,7 +271,8 @@ export default function ProductCard({ product }: ProductCardProps) {
                 </Box>
             </ImageContainer>
 
-            <CardContent sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+            <CardContent sx={{ p: isBelow375 ? 1.5 : 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                {!isBelow375 && (
                 <Typography 
                     variant="caption" 
                     sx={{ 
@@ -259,15 +286,16 @@ export default function ProductCard({ product }: ProductCardProps) {
                 >
                     {product.Seller?.shop_name || 'FlashStore'}
                 </Typography>
+                )}
                 
                 <Typography
                     sx={{
                         fontWeight: 800,
-                        fontSize: '0.9rem',
-                        lineHeight: 1.4,
+                        fontSize: isBelow375 ? '0.75rem' : '0.9rem',
+                        lineHeight: 1.3,
                         color: '#1e293b',
-                        mb: 1,
-                        height: 40,
+                        mb: isBelow375 ? 0.5 : 1,
+                        height: isBelow375 ? 32 : 40,
                         overflow: 'hidden',
                         display: '-webkit-box',
                         WebkitLineClamp: 2,
@@ -277,34 +305,57 @@ export default function ProductCard({ product }: ProductCardProps) {
                     {product.productName}
                 </Typography>
 
-                <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 2 }}>
+                <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: isBelow375 ? 1 : 2 }}>
                     <Rating 
                         value={typeof product.avgRating === 'string' ? parseFloat(product.avgRating) : (product.avgRating || 0)} 
                         precision={0.1} 
                         size="small" 
                         readOnly 
-                        sx={{ fontSize: '0.85rem' }} 
+                        sx={{ fontSize: isBelow375 ? '0.7rem' : '0.85rem' }} 
                     />
-                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: isBelow375 ? '0.65rem' : '0.75rem' }}>
                         ({parseInt(String(product.totalRatings || 0))})
                     </Typography>
                 </Stack>
 
                 <Box sx={{ mt: 'auto' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', mb: 2 }}>
-                        <Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', color: '#0C831F' }}>
-                                    ₹{product.price}
-                                </Typography>
-                                <Typography sx={{ fontSize: '0.85rem', color: '#94a3b8', textDecoration: 'line-through', fontWeight: 600 }}>
-                                    ₹{originalPrice}
+                    <Box sx={{ mb: isBelow375 ? 1 : 2 }}>
+                        <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 0.5 }}>
+                            <Box sx={{ 
+                                bgcolor: '#0C831F', 
+                                color: 'white', 
+                                px: 1, 
+                                py: 0.2, 
+                                borderRadius: '6px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                boxShadow: '0 2px 4px rgba(12, 131, 31, 0.2)'
+                            }}>
+                                <Typography sx={{ fontWeight: 900, fontSize: isBelow375 ? '0.9rem' : '1.05rem' }}>
+                                    ₹{finalPrice}
                                 </Typography>
                             </Box>
-                            <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
-                                {product.unit || 'per unit'}
+                            {discountPercent > 0 && (
+                                <Typography sx={{ 
+                                    fontSize: isBelow375 ? '0.8rem' : '0.95rem', 
+                                    color: '#94a3b8', 
+                                    textDecoration: 'line-through', 
+                                    fontWeight: 700 
+                                }}>
+                                    ₹{originalPrice}
+                                </Typography>
+                            )}
+                        </Stack>
+                        
+                        {discountPercent > 0 && (
+                            <Typography variant="caption" sx={{ color: '#0C831F', fontWeight: 900, fontSize: '0.8rem', display: 'block', mb: 0.5 }}>
+                                ₹{discountAmount.toFixed(0)} OFF
                             </Typography>
-                        </Box>
+                        )}
+
+                        <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, display: 'block' }}>
+                            {product.unit || 'per unit'}
+                        </Typography>
                     </Box>
 
                     {cartItem ? (
@@ -313,8 +364,8 @@ export default function ProductCard({ product }: ProductCardProps) {
                             alignItems: 'center', 
                             justifyContent: 'space-between',
                             bgcolor: '#0C831F',
-                            borderRadius: '12px',
-                            height: 38,
+                            borderRadius: isBelow375 ? '10px' : '12px',
+                            height: isBelow375 ? 30 : 38,
                             p: 0.5,
                             boxShadow: '0 4px 12px rgba(12, 131, 31, 0.15)',
                         }} onClick={e => e.stopPropagation()}>
@@ -326,8 +377,8 @@ export default function ProductCard({ product }: ProductCardProps) {
                             >
                                 <RemoveIcon fontSize="small" />
                             </IconButton>
-                            <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: '0.9rem' }}>
-                                {updating ? <CircularProgress size={16} color="inherit" /> : cartItem.quantity}
+                            <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: '0.9rem', width: 24, textAlign: 'center' }}>
+                                {updating ? <CircularProgress size={16} color="inherit" thickness={6} /> : cartItem.quantity}
                             </Typography>
                             <IconButton 
                                 size="small" 
@@ -348,9 +399,11 @@ export default function ProductCard({ product }: ProductCardProps) {
                                 border: '1.5px solid #0C831F',
                                 color: '#0C831F',
                                 fontWeight: 900,
-                                borderRadius: '12px',
+                                borderRadius: '10px',
                                 textTransform: 'none',
-                                py: 0.8,
+                                py: isBelow375 ? 0.3 : 0.8,
+                                minHeight: isBelow375 ? 30 : 38,
+                                fontSize: isBelow375 ? '0.8rem' : '0.875rem',
                                 '&:hover': {
                                     bgcolor: '#0C831F',
                                     color: '#fff',
@@ -358,7 +411,12 @@ export default function ProductCard({ product }: ProductCardProps) {
                                 },
                             }}
                         >
-                            {updating ? <CircularProgress size={20} color="inherit" /> : 'Add'}
+                            {updating ? (
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                    <CircularProgress size={16} color="inherit" thickness={6} />
+                                    <Typography variant="caption" sx={{ fontWeight: 900 }}>Adding...</Typography>
+                                </Stack>
+                            ) : 'Add'}
                         </Button>
                     )}
                 </Box>

@@ -34,6 +34,7 @@ import {
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import debounce from 'lodash/debounce';
+import ConfirmDialog from '@/components/mui/ConfirmDialog';
 
 export default function AdminProductsPage() {
     const [products, setProducts] = useState<any[]>([]);
@@ -52,6 +53,11 @@ export default function AdminProductsPage() {
 
     const [statusFilter, setStatusFilter] = useState('all');
     const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
+
+    // Confirm Dialog States
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchProducts = useCallback(async () => {
         try {
@@ -122,16 +128,26 @@ export default function AdminProductsPage() {
         }
     }, [fetchProducts]);
 
-    const deleteProduct = useCallback(async (id: number) => {
-        if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
+    const handleDeleteClick = useCallback((id: number) => {
+        setSelectedProductId(id);
+        setDeleteOpen(true);
+    }, []);
+
+    const handleConfirmDelete = async () => {
+        if (!selectedProductId) return;
         try {
-            await api.delete(`/products/${id}`); // Assuming global delete path
+            setIsDeleting(true);
+            await api.delete(`/products/${selectedProductId}`);
             toast.success('Product deleted successfully');
+            setDeleteOpen(false);
             fetchProducts();
         } catch (err: any) {
             toast.error('Failed to delete product');
+        } finally {
+            setIsDeleting(false);
+            setSelectedProductId(null);
         }
-    }, [fetchProducts]);
+    };
 
     const columns: GridColDef[] = useMemo(() => [
         {
@@ -324,13 +340,13 @@ export default function AdminProductsPage() {
                         </Button>
                     )}
 
-                    <IconButton size="small" onClick={() => deleteProduct(params.row.id)} sx={{ color: 'error.main', opacity: 0.5, '&:hover': { opacity: 1 } }}>
+                    <IconButton size="small" onClick={() => handleDeleteClick(params.row.id)} sx={{ color: 'error.main', opacity: 0.5, '&:hover': { opacity: 1 } }}>
                         <DeleteIcon fontSize="small" />
                     </IconButton>
                 </Stack>
             ),
         },
-    ], [handleUpdateStatus, deleteProduct]);
+    ], [handleUpdateStatus, handleDeleteClick]);
 
     const CustomNoRowsOverlay = () => (
         <Stack height="100%" alignItems="center" justifyContent="center" spacing={2}>
@@ -485,6 +501,18 @@ export default function AdminProductsPage() {
                     />
                 </Box>
             </Card>
+
+            <ConfirmDialog
+                open={deleteOpen}
+                onClose={() => setDeleteOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Product"
+                message="Are you sure you want to permanently delete this product from the marketplace? This action cannot be undone."
+                confirmText="Yes, Delete Product"
+                cancelText="No, Keep It"
+                type="danger"
+                loading={isDeleting}
+            />
         </Box>
     );
 }

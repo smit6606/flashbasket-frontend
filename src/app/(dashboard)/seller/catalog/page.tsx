@@ -38,6 +38,7 @@ import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
 import debounce from 'lodash/debounce';
+import ConfirmDialog from '@/components/mui/ConfirmDialog';
 
 interface Product {
     id: number;
@@ -68,6 +69,11 @@ export default function SellerProductsPage() {
     const [sortModel, setSortModel] = useState<GridSortModel>([
         { field: 'createdAt', sort: 'desc' },
     ]);
+
+    // Confirm Dialog States
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [productToDelete, setProductToDelete] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchProducts = useCallback(async () => {
         try {
@@ -138,16 +144,26 @@ export default function SellerProductsPage() {
         }
     }, [fetchProducts]);
 
-    const deleteProduct = useCallback(async (id: number) => {
-        if (!confirm('Are you sure you want to delete this product?')) return;
+    const handleDeleteClick = useCallback((id: number) => {
+        setProductToDelete(id);
+        setDeleteDialogOpen(true);
+    }, []);
+
+    const handleConfirmDelete = async () => {
+        if (!productToDelete) return;
         try {
-            await api.delete(`/seller/product/${id}`);
+            setIsDeleting(true);
+            await api.delete(`/seller/product/${productToDelete}`);
             toast.success('Product Deleted');
+            setDeleteDialogOpen(false);
             fetchProducts();
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Failed to delete product');
+        } finally {
+            setIsDeleting(false);
+            setProductToDelete(null);
         }
-    }, [fetchProducts]);
+    };
 
     const columns: GridColDef[] = useMemo(() => [
         {
@@ -278,19 +294,19 @@ export default function SellerProductsPage() {
                         </IconButton>
                     </Tooltip>
                     <Tooltip title="Edit Product">
-                        <IconButton size="small" onClick={() => router.push(`/seller/products/edit/${params.row.id}`)} sx={{ color: 'info.main' }}>
+                        <IconButton size="small" onClick={() => router.push(`/seller/catalog/edit/${params.row.id}`)} sx={{ color: 'info.main' }}>
                             <EditIcon fontSize="small" />
                         </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete Product">
-                        <IconButton size="small" onClick={() => deleteProduct(params.row.id)} sx={{ color: 'error.main' }}>
+                        <IconButton size="small" onClick={() => handleDeleteClick(params.row.id)} sx={{ color: 'error.main' }}>
                             <DeleteIcon fontSize="small" />
                         </IconButton>
                     </Tooltip>
                 </Stack>
             ),
         },
-    ], [router, toggleStatus, deleteProduct]);
+    ], [router, toggleStatus, handleDeleteClick]);
 
     const CustomNoRowsOverlay = () => (
         <Stack height="100%" alignItems="center" justifyContent="center" spacing={2}>
@@ -319,7 +335,7 @@ export default function SellerProductsPage() {
                     <Button
                         variant="text"
                         startIcon={<AddIcon />}
-                        onClick={() => router.push('/seller/products/add')}
+                        onClick={() => router.push('/seller/catalog/add')}
                         sx={{ mt: 2, fontWeight: 900, color: 'primary.main', '&:hover': { bgcolor: alpha('#0C831F', 0.05) } }}
                     >
                         Add First Product
@@ -341,7 +357,7 @@ export default function SellerProductsPage() {
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
-                    onClick={() => router.push('/seller/products/add')}
+                    onClick={() => router.push('/seller/catalog/add')}
                     sx={{ px: 4, py: 1.5, borderRadius: '16px', fontWeight: 900, boxShadow: '0 8px 24px rgba(12, 131, 31, 0.2)' }}
                 >
                     Add New Product
@@ -451,6 +467,18 @@ export default function SellerProductsPage() {
                     />
                 </Box>
             </Card>
+
+            <ConfirmDialog
+                open={deleteDialogOpen}
+                onClose={() => setDeleteDialogOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Product"
+                message="Are you sure you want to delete this product? This action cannot be undone and will remove the product from all customer carts."
+                confirmText="Yes, Delete Product"
+                cancelText="No, Keep It"
+                type="danger"
+                loading={isDeleting}
+            />
         </Box>
     );
 }

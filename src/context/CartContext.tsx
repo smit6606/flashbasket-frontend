@@ -5,17 +5,20 @@ import { api } from '@/lib/api';
 import { useAuth } from './AuthContext';
 
 interface CartItem {
-    id?: number; // DB ID (optional for guest)
+    id?: number; 
     productId: number;
+    sellerId: number;
     quantity: number;
-    price: string;
-    productName?: string; // For guest storage
-    images?: string[];    // For guest storage
+    price?: string;      // Discounted price at purchase
+    discountPercent?: number;
+    productName?: string;
+    images?: string[];
 }
 
 interface CartContextType {
     cartCount: number;
     cartItems: CartItem[];
+    cartData: any;
     refreshCart: () => Promise<void>;
     getItemFromCart: (productId: number) => CartItem | undefined;
     addToCart: (product: any, quantity: number) => Promise<void>;
@@ -29,34 +32,77 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     const { user } = useAuth();
     const [cartCount, setCartCount] = useState(0);
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
+    const [cartData, setCartData] = useState<any>(null);
 
     const refreshCart = useCallback(async () => {
         if (!user) {
             // Load Guest Cart
             const guest = localStorage.getItem('guestCart');
             if (guest) {
-                const items = JSON.parse(guest);
-                setCartItems(items);
-                setCartCount(items.reduce((sum: number, i: any) => sum + i.quantity, 0));
+                try {
+                    const localItems = JSON.parse(guest);
+                    if (localItems.length === 0) {
+                        setCartItems([]);
+                        setCartCount(0);
+                        setCartData(null);
+                        return;
+                    }
+
+                    // Fetch actual product details for these IDs
+                    const ids = localItems.map((i: any) => i.productId).join(',');
+                    const response = await api.get(`/products?id=${ids}&limit=50`);
+                    const products = response.data?.items || [];
+
+                    let guestItemTotal = 0;
+                    const enrichedItems = localItems.map((li: any) => {
+                        const p = products.find((prod: any) => prod.id === li.productId);
+                        const price = parseFloat(p?.finalPrice || p?.price || '0');
+                        guestItemTotal += price * li.quantity;
+                        return {
+                            ...li,
+                            productName: p?.productName || 'Unknown Product',
+                            images: p?.images || [],
+                            price: price.toFixed(2),
+                            discountPercent: p?.discountPercent || 0
+                        };
+                    });
+
+                    setCartItems(enrichedItems);
+                    setCartCount(enrichedItems.reduce((sum: number, i: any) => sum + (i.quantity || 0), 0));
+                    setCartData({
+                        items: enrichedItems,
+                        itemTotal: guestItemTotal.toFixed(2)
+                    });
+                } catch (err) {
+                    console.error('Guest cart refresh failed', err);
+                }
             } else {
                 setCartItems([]);
                 setCartCount(0);
+                setCartData(null);
             }
             return;
         }
         try {
             const response = await api.get(`/cart?t=${Date.now()}`);
-            const items = response.data?.items?.map((i: any) => ({
-                id: i.id,
-                productId: i.productId,
-                quantity: i.quantity,
-                price: i.price,
-                productName: i.Product?.productName,
-                images: i.Product?.images
-            })) || [];
+            const data = response.data;
+            const items = data?.items?.map((i: any) => {
+                const p = i.Product;
+                return {
+                    id: i.id,
+                    productId: i.productId,
+                    sellerId: i.sellerId,
+                    quantity: i.quantity,
+                    price: i.price,
+                    discountPercent: i.discountPercent,
+                    productName: p?.productName,
+                    images: p?.images
+                };
+            }) || [];
             const total = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
             setCartItems(items);
             setCartCount(total);
+            setCartData(data);
         } catch (error) {
             console.error('FAILED TO REFRESH CART:', error);
         }
@@ -74,10 +120,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                 items.push({
                     productId: product.id,
                     sellerId: product.Seller?.id || product.sellerId,
-                    quantity: quantity,
-                    price: product.discountPrice || product.price,
-                    productName: product.productName,
-                    images: product.images
+                    quantity: quantity
                 });
             }
             localStorage.setItem('guestCart', JSON.stringify(items));
@@ -89,8 +132,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         await api.post('/cart/add', {
             productId: product.id,
             sellerId: product.Seller?.id || product.sellerId,
-            quantity: quantity,
-            price: product.discountPrice || product.price
+            quantity: quantity
         });
         await refreshCart();
     };
@@ -145,8 +187,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                         await api.post('/cart/add', {
                             productId: item.productId,
                             sellerId: item.sellerId,
-                            quantity: item.quantity,
-                            price: item.price
+                            quantity: item.quantity
                         });
                     }
                     localStorage.removeItem('guestCart');
@@ -165,6 +206,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         <CartContext.Provider value={{ 
             cartCount, 
             cartItems, 
+            cartData,
             refreshCart, 
             getItemFromCart, 
             addToCart, 

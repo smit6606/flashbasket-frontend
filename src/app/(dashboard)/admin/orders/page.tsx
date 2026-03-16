@@ -38,7 +38,21 @@ import {
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import { formatPhoneForDisplay } from '@/lib/phoneUtils';
 import debounce from 'lodash/debounce';
+import OrderTimeline from '@/components/OrderTimeline';
+import { Dialog, DialogContent, DialogTitle, Slide } from '@mui/material';
+import ConfirmDialog from '@/components/mui/ConfirmDialog';
+import { TransitionProps } from '@mui/material/transitions';
+
+const Transition = React.forwardRef(function Transition(
+    props: TransitionProps & {
+        children: React.ReactElement<any, any>;
+    },
+    ref: React.Ref<unknown>,
+) {
+    return <Slide direction="up" ref={ref} {...props} />;
+});
 
 export default function AdminOrders() {
     const [orders, setOrders] = useState<any[]>([]);
@@ -55,6 +69,15 @@ export default function AdminOrders() {
     const [statusFilter, setStatusFilter] = useState('all');
 
     const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
+
+    // Timeline Modal States
+    const [timelineOrderId, setTimelineOrderId] = useState<number | null>(null);
+    const [timelineOpen, setTimelineOpen] = useState(false);
+    
+    // Confirm Dialog States
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+    const [cancelling, setCancelling] = useState(false);
 
     const fetchOrders = async () => {
         try {
@@ -104,10 +127,10 @@ export default function AdminOrders() {
         if (!partnerId) return;
         try {
             await api.put('/admin/assign-delivery', { orderId, partnerId });
-            toast.success('Delivery boy assigned successfully!');
+            toast.success('Delivery partner assigned successfully!');
             fetchOrders();
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Failed to assign delivery boy');
+            toast.error(err.response?.data?.message || 'Failed to assign delivery partner');
         }
     };
 
@@ -121,29 +144,44 @@ export default function AdminOrders() {
         }
     };
 
-    const handleCancel = async (orderId: number) => {
-        if(!window.confirm('Are you sure you want to cancel this order?')) return;
+    const handleCancelClick = (orderId: number) => {
+        setSelectedOrderId(orderId);
+        setConfirmOpen(true);
+    };
+
+    const handleConfirmCancel = async () => {
+        if (!selectedOrderId) return;
         try {
-            await api.patch(`/orders/${orderId}/status`, { status: 'cancelled' });
+            setCancelling(true);
+            await api.patch(`/orders/${selectedOrderId}/status`, { status: 'cancelled' });
             toast.warn('Order Cancelled');
+            setConfirmOpen(false);
             fetchOrders();
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Failed to cancel order');
+        } finally {
+            setCancelling(false);
+            setSelectedOrderId(null);
         }
-    }
+    };
+
+    const openTimeline = (id: number) => {
+        setTimelineOrderId(id);
+        setTimelineOpen(true);
+    };
 
     const getStatusChip = (status: string) => {
         const configs: any = {
-            'pending': { color: 'warning', label: 'Order Placed' },
-            'preparing': { color: 'info', label: 'Seller Preparing' },
-            'awaiting-assignment': { color: 'secondary', label: 'Waiting for Admin' },
-            'assigned': { color: 'primary', label: 'Driver Assigned' },
-            'accepted-by-partner': { color: 'success', label: 'Driver Committed' },
-            'ready-to-ship': { color: 'info', label: 'Ready for Dispatch' },
-            'shipped': { color: 'primary', label: 'In Transit' },
+            'pending': { color: 'warning', label: 'Pending' },
+            'preparing': { color: 'info', label: 'Processing' },
+            'awaiting-assignment': { color: 'secondary', label: 'Processing' },
+            'assigned': { color: 'primary', label: 'Processing' },
+            'accepted-by-partner': { color: 'success', label: 'Processing' },
+            'ready-to-ship': { color: 'info', label: 'Processing' },
+            'shipped': { color: 'primary', label: 'Shipped' },
             'out-for-delivery': { color: 'warning', label: 'Out for Delivery' },
-            'arrived': { color: 'secondary', label: 'Arrived at User' },
-            'delivered': { color: 'success', label: 'Delivered' },
+            'arrived': { color: 'secondary', label: 'Out for Delivery' },
+            'delivered': { color: 'success', label: 'Completed' },
             'completed': { color: 'success', label: 'Completed' },
             'cancelled': { color: 'error', label: 'Cancelled' }
         };
@@ -169,7 +207,7 @@ export default function AdminOrders() {
 
             <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
                 <TextField
-                    placeholder="Search Order ID or Customer..."
+                    placeholder="Search Order ID, Customer, Seller, or Driver..."
                     value={searchQuery}
                     onChange={(e) => { setSearchQuery(e.target.value); setPage(0); }}
                     fullWidth
@@ -206,10 +244,10 @@ export default function AdminOrders() {
                         sx={{ borderRadius: 3, fontWeight: 700 }}
                     >
                         <MenuItem value="all">Any Stage</MenuItem>
-                        <MenuItem value="pending">Recently Placed</MenuItem>
-                        <MenuItem value="awaiting-assignment">Needs Driver</MenuItem>
-                        <MenuItem value="shipped">In Transit</MenuItem>
-                        <MenuItem value="delivered">Delivered</MenuItem>
+                        <MenuItem value="pending">Pending</MenuItem>
+                        <MenuItem value="preparing">Processing</MenuItem>
+                        <MenuItem value="shipped">Shipped</MenuItem>
+                        <MenuItem value="completed">Completed</MenuItem>
                         <MenuItem value="cancelled">Cancelled</MenuItem>
                     </Select>
                 </FormControl>
@@ -262,7 +300,13 @@ export default function AdminOrders() {
                             return (
                                 <TableRow key={order.id} sx={{ '&:hover': { bgcolor: alpha('#f8fafc', 0.5) } }}>
                                     <TableCell>
-                                        <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>{order.orderNumber}</Typography>
+                                        <Typography 
+                                            variant="subtitle2" 
+                                            sx={{ fontWeight: 900, color: 'primary.main', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                                            onClick={() => openTimeline(order.id)}
+                                        >
+                                            {order.orderNumber}
+                                        </Typography>
                                         <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
                                             {order.User?.user_name} • {new Date(order.createdAt).toLocaleDateString()}
                                         </Typography>
@@ -287,22 +331,41 @@ export default function AdminOrders() {
                                     </TableCell>
                                     <TableCell>
                                         <Stack direction="row" spacing={1} alignItems="center" justifyContent="center">
-                                            <FormControl size="small" sx={{ minWidth: 160 }}>
-                                                <Select
-                                                    displayEmpty
-                                                    value={order.deliveryPartnerId || ''}
-                                                    onChange={(e) => handleAssignDelivery(order.id, e.target.value as number)}
-                                                    disabled={isFinal}
-                                                    sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.85rem' }}
-                                                >
-                                                    <MenuItem value="" disabled><em>Select Driver</em></MenuItem>
-                                                    {partners.map(p => (
-                                                        <MenuItem key={p.id} value={p.id} sx={{ fontSize: '0.85rem', fontWeight: 700 }}>
-                                                            {p.name} {p.isAvailable ? '🟢' : '🔴'}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
+                                            {!order.DeliveryPartner ? (
+                                                <Box sx={{ textAlign: 'center' }}>
+                                                    <Chip 
+                                                        label="Searching for Drivers" 
+                                                        size="small"
+                                                        variant="outlined"
+                                                        sx={{ 
+                                                            fontWeight: 900, 
+                                                            color: 'text.disabled',
+                                                            border: '1px dashed',
+                                                            animation: order.status === 'awaiting-assignment' ? 'pulse 2s infinite' : 'none'
+                                                        }} 
+                                                    />
+                                                    <style>{`
+                                                        @keyframes pulse {
+                                                            0% { opacity: 0.5; }
+                                                            50% { opacity: 1; }
+                                                            100% { opacity: 0.5; }
+                                                        }
+                                                    `}</style>
+                                                </Box>
+                                            ) : (
+                                                <Stack direction="row" spacing={1} alignItems="center">
+                                                    <Avatar 
+                                                        src={order.DeliveryPartner.profileImage} 
+                                                        sx={{ width: 28, height: 28, bgcolor: 'secondary.light', fontSize: '0.75rem', fontWeight: 900 }}
+                                                    >
+                                                        {order.DeliveryPartner.name?.charAt(0)}
+                                                    </Avatar>
+                                                    <Box>
+                                                        <Typography variant="body2" sx={{ fontWeight: 800 }}>{order.DeliveryPartner.name}</Typography>
+                                                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>{formatPhoneForDisplay(order.DeliveryPartner.phone)}</Typography>
+                                                    </Box>
+                                                </Stack>
+                                            )}
 
                                             <Button
                                                 variant="contained"
@@ -311,7 +374,7 @@ export default function AdminOrders() {
                                                 onClick={() => handleDispatch(order.id)}
                                                 disabled={order.status !== 'accepted-by-partner'}
                                                 startIcon={<DispatchIcon />}
-                                                sx={{ fontWeight: 800, borderRadius: 2, textTransform: 'none' }}
+                                                sx={{ fontWeight: 800, borderRadius: 2, textTransform: 'none', ml: 2 }}
                                             >
                                                 Dispatch
                                             </Button>
@@ -322,15 +385,15 @@ export default function AdminOrders() {
                                             <Button 
                                                 size="small" 
                                                 color="error"
-                                                onClick={() => handleCancel(order.id)}
+                                                onClick={() => handleCancelClick(order.id)}
                                                 sx={{ fontWeight: 800 }}
                                             >
                                                 Cancel
                                             </Button>
                                         )}
                                         {isFinal && (
-                                            <Typography variant="caption" sx={{ color: order.status === 'cancelled' ? 'error.main' : 'success.main', fontWeight: 900 }}>
-                                                {order.status.toUpperCase()}
+                                            <Typography variant="caption" sx={{ color: ['cancelled', 'failed'].includes(order.status) ? 'error.main' : 'success.main', fontWeight: 900 }}>
+                                                {order.status === 'delivered' ? 'COMPLETED' : order.status.toUpperCase()}
                                             </Typography>
                                         )}
                                     </TableCell>
@@ -360,6 +423,39 @@ export default function AdminOrders() {
                     sx={{ borderTop: '1px solid #e2e8f0' }}
                 />
             </TableContainer>
+
+            {/* Order Timeline Dialog */}
+            <Dialog
+                open={timelineOpen}
+                TransitionComponent={Transition}
+                keepMounted
+                onClose={() => setTimelineOpen(false)}
+                PaperProps={{
+                    sx: { borderRadius: 6, p: 2, maxWidth: 500, width: '100%' }
+                }}
+            >
+                <DialogTitle sx={{ fontWeight: 900, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    Order Status Timeline
+                    <IconButton size="small" onClick={() => setTimelineOpen(false)} sx={{ bgcolor: '#f1f5f9' }}>
+                        <CancelIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    {timelineOrderId && <OrderTimeline orderId={timelineOrderId} />}
+                </DialogContent>
+            </Dialog>
+
+            <ConfirmDialog
+                open={confirmOpen}
+                onClose={() => setConfirmOpen(false)}
+                onConfirm={handleConfirmCancel}
+                title="Cancel Order"
+                message="Are you sure you want to cancel this order? This action will notify the customer and seller."
+                confirmText="Yes, Cancel Order"
+                cancelText="No, Keep Order"
+                type="danger"
+                loading={cancelling}
+            />
         </Box>
     );
 }

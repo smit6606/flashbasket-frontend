@@ -5,6 +5,8 @@ import { Box } from '@mui/material';
 import MuiNavbar from '@/components/mui/MuiNavbar';
 import MuiFooter from '@/components/mui/MuiFooter';
 import MuiBreadcrumbs from '@/components/mui/MuiBreadcrumbs';
+import PageTransition from '@/components/animations/PageTransition';
+import PromoFloatingIndicator from '@/components/mui/PromoFloatingIndicator';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
     return (
@@ -12,8 +14,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <MuiNavbar />
             <MuiBreadcrumbs />
             <Box component="main" sx={{ flexGrow: 1, width: '100%' }}>
-                {children}
+                <PageTransition>{children}</PageTransition>
             </Box>
+            <PromoFloatingIndicator />
             <MuiFooter />
         </Box>
     );

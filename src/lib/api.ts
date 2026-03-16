@@ -1,3 +1,13 @@
+import NProgress from 'nprogress';
+import 'nprogress/nprogress.css';
+
+// Configure NProgress
+NProgress.configure({ 
+    showSpinner: false, 
+    trickleSpeed: 200,
+    minimum: 0.3
+});
+
 const getApiUrl = () => {
     if (typeof window === 'undefined') return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
     
@@ -41,33 +51,55 @@ export const apiFetch = async (endpoint: string, options: FetchOptions = {}) => 
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(url, {
+  const fetchOptions: any = {
     ...init,
     headers,
-  });
+  };
 
-  let data;
-  const contentType = response.headers.get('content-type');
-  
-  if (contentType && contentType.includes('application/json')) {
-    try {
-      data = await response.json();
-    } catch (e) {
-      console.error('Failed to parse JSON response', e);
-      data = { message: 'Failed to parse server response' };
+  // Add targetAddressSpace for Chrome's Private Network Access compatibility
+  if (API_URL.includes('localhost') || API_URL.includes('127.0.0.1') || API_URL.includes('192.168.')) {
+    fetchOptions.targetAddressSpace = 'local';
+  }
+
+  NProgress.start();
+
+  try {
+    const response = await fetch(url, fetchOptions);
+
+    let data;
+    const contentType = response.headers.get('content-type');
+    
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        data = await response.json();
+      } catch (e) {
+        console.error('Failed to parse JSON response', e);
+        data = { message: 'Failed to parse server response' };
+      }
+    } else {
+      const text = await response.text();
+      data = { message: text || 'Empty or non-JSON response from server' };
     }
-  } else {
-    const text = await response.text();
-    data = { message: text || 'Empty or non-JSON response from server' };
-  }
 
-  if (!response.ok) {
-    const error: any = new Error(data.message || data.error || 'Something went wrong');
-    error.response = { data };
-    throw error;
-  }
+    if (!response.ok) {
+      const isLoginRequest = url.includes('/auth/login');
+      
+      if (response.status === 401 && typeof window !== 'undefined' && !isLoginRequest) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.dispatchEvent(new CustomEvent('unauthorized-redirect', { 
+              detail: { message: data.message } 
+          }));
+      }
+      const error: any = new Error(data.message || data.error || 'Something went wrong');
+      error.response = { data };
+      throw error;
+    }
 
-  return data;
+    return data;
+  } finally {
+    NProgress.done();
+  }
 };
 
 export const api = {

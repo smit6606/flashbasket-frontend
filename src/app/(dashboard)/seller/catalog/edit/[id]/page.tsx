@@ -34,7 +34,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     const [formData, setFormData] = useState({
         productName: '',
         description: '',
-        price: '',
+        originalPrice: '',
+        discountPercent: '0',
+        price: '', // finalPrice
         stock: '',
         unit: 'kg',
         categoryId: '',
@@ -64,7 +66,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 setFormData({
                     productName: p.productName,
                     description: p.description,
-                    price: p.price.toString(),
+                    originalPrice: p.originalPrice?.toString() || p.price?.toString() || '',
+                    discountPercent: p.discountPercent?.toString() || '0',
+                    price: p.finalPrice?.toString() || p.price?.toString() || '',
                     stock: p.stock.toString(),
                     unit: p.unit,
                     categoryId: p.categoryId?.toString() || '',
@@ -83,7 +87,20 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     }, [id]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData(prev => {
+            const newData = { ...prev, [name]: value };
+            
+            // Auto-calculate final price if originalPrice or discountPercent changes
+            if (name === 'originalPrice' || name === 'discountPercent') {
+                const op = parseFloat(name === 'originalPrice' ? value : prev.originalPrice) || 0;
+                const dp = parseFloat(name === 'discountPercent' ? value : prev.discountPercent) || 0;
+                const final = op - (op * dp / 100);
+                newData.price = final.toFixed(2);
+            }
+            
+            return newData;
+        });
     };
 
     const handleCategoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -192,8 +209,14 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                             <CardContent sx={{ p: 0 }}>
                                 <Typography variant="h6" sx={{ fontWeight: 800, mb: 3 }}>Pricing & Inventory</Typography>
                                 <Grid container spacing={3}>
-                                    <Grid size={{ xs: 12, sm: 6 }}>
-                                        <TextField fullWidth required type="number" label="Price" name="price" value={formData.price} onChange={handleChange} InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }} />
+                                    <Grid size={{ xs: 12, sm: 4 }}>
+                                        <TextField fullWidth required type="number" label="Original Price" name="originalPrice" value={formData.originalPrice} onChange={handleChange} InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, sm: 4 }}>
+                                        <TextField fullWidth required type="number" label="Discount (%)" name="discountPercent" value={formData.discountPercent} onChange={handleChange} InputProps={{ endAdornment: <InputAdornment position="end">%</InputAdornment> }} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, sm: 4 }}>
+                                        <TextField fullWidth disabled label="Final Price" value={formData.price} InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }} helperText="Calculated automatically" />
                                     </Grid>
                                     <Grid size={{ xs: 12, sm: 6 }}>
                                         <TextField fullWidth required type="number" label="Stock Quantity" name="stock" value={formData.stock} onChange={handleChange} />

@@ -30,6 +30,7 @@ import {
     useMediaQuery,
     useTheme,
 } from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     LocalShipping as ShippingIcon,
     Payment as PaymentIcon,
@@ -50,6 +51,8 @@ import UpiQrPayment from '@/components/UpiQrPayment';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'react-toastify';
 import GoogleMapPicker from '@/components/GoogleMapPicker';
+import LoadingButton from '@/components/mui/LoadingButton';
+import { formatPhoneForDisplay, normalizePhoneForBackend } from '@/lib/phoneUtils';
 
 interface CartItem {
     id: number;
@@ -70,7 +73,12 @@ interface CartItem {
 
 interface Cart {
     items: CartItem[];
-    subtotal: string;
+    itemTotal: string;
+    handlingFee: string;
+    deliveryFee: string;
+    totalAmount: string;
+    totalSavings: string;
+    promoDiscount?: string;
 }
 
 const steps = ['Delivery Address', 'Payment', 'Review Order'];
@@ -114,21 +122,32 @@ export default function CheckoutPage() {
     const handleLocationSelect = (data: { lat: number; lng: number; address: string }) => {
         setLocation({ lat: data.lat, lng: data.lng });
         if (data.address) {
+            // Split the address string to try and guess city/zip if possible
+            const parts = data.address.split(',');
+            const cityPart = parts.length > 2 ? parts[parts.length - 3].trim() : '';
+            const zipPart = data.address.match(/\b\d{6}\b/)?.[0] || '';
+
             setAddressForm(prev => ({
                 ...prev,
-                area: data.address
+                area: data.address,
+                city: cityPart || prev.city,
+                zip: zipPart || prev.zip
             }));
+            
+            toast.info("Location detected! We've filled in the address details for you.", { 
+                toastId: 'loc-detected',
+                icon: <span>📍</span>
+            });
         }
     };
 
     const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'cod' | 'upi'>('cod');
-    const deliveryFee = 25;
 
     useEffect(() => {
         if (authLoading) return;
 
         if (!token) {
-            router.push('/login');
+            router.push('/login?callbackUrl=/checkout');
             return;
         }
 
@@ -151,9 +170,13 @@ export default function CheckoutPage() {
         fetchData();
     }, [token, router, authLoading]);
 
-    const calculateSubtotal = () => cart ? parseFloat(cart.subtotal) : 0;
+    const calculateSubtotal = () => cart ? parseFloat(cart.itemTotal) : 0;
     const calculateDiscount = () => appliedCoupon ? parseFloat(appliedCoupon.discountAmount) : 0;
-    const calculateTotal = () => calculateSubtotal() - calculateDiscount() + deliveryFee;
+    const calculatePromoDiscount = () => cart ? parseFloat(cart.promoDiscount || '0') : 0;
+    const calculateTotal = () => {
+        if (!cart) return 0;
+        return calculateSubtotal() + parseFloat(cart.handlingFee) + parseFloat(cart.deliveryFee) - calculateDiscount() - calculatePromoDiscount();
+    };
 
     const validateAddressForm = () => {
         const newErrors: Record<string, string> = {};
@@ -173,6 +196,7 @@ export default function CheckoutPage() {
         try {
             const res = await api.post('/addresses/add', {
                 ...addressForm,
+                phone: normalizePhoneForBackend(addressForm.phone),
                 pincode: addressForm.zip,
                 latitude: location.lat,
                 longitude: location.lng
@@ -240,6 +264,7 @@ export default function CheckoutPage() {
             const fullAddress = `${selectedAddr.fullName}, ${selectedAddr.houseNumber}, ${selectedAddr.area}, ${selectedAddr.city}, ${selectedAddr.state} - ${selectedAddr.pincode}. Phone: ${selectedAddr.phone}`;
             const response = await api.post('/orders/create', {
                 deliveryAddress: fullAddress,
+                city: selectedAddr.city,
                 paymentMethod,
                 totalAmount: calculateTotal(),
                 latitude: selectedAddr.latitude,
@@ -308,7 +333,7 @@ export default function CheckoutPage() {
                                                         <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.secondary', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                                                             {addr.houseNumber}, {addr.area}
                                                         </Typography>
-                                                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.disabled' }}>{addr.phone}</Typography>
+                                                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.disabled' }}>{formatPhoneForDisplay(addr.phone)}</Typography>
                                                     </Box>
                                                 </Stack>
                                             </Paper>
@@ -361,7 +386,10 @@ export default function CheckoutPage() {
                                     <Grid size={{ xs: 12, md: 6 }}>
                                         <TextField
                                             fullWidth
+                                            id="checkout-fullName"
+                                            name="fullName"
                                             label="Full Name"
+                                            autoComplete="name"
                                             value={addressForm.fullName}
                                             onChange={(e) => setAddressForm({ ...addressForm, fullName: e.target.value })}
                                             error={!!errors.fullName}
@@ -371,7 +399,10 @@ export default function CheckoutPage() {
                                     <Grid size={{ xs: 12, md: 6 }}>
                                         <TextField
                                             fullWidth
+                                            id="checkout-phone"
+                                            name="phone"
                                             label="Phone Number"
+                                            autoComplete="tel"
                                             value={addressForm.phone}
                                             onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
                                             error={!!errors.phone}
@@ -381,7 +412,10 @@ export default function CheckoutPage() {
                                     <Grid size={{ xs: 12 }}>
                                         <TextField
                                             fullWidth
+                                            id="checkout-houseNumber"
+                                            name="houseNumber"
                                             label="House / Flat / Building No."
+                                            autoComplete="address-line1"
                                             value={addressForm.houseNumber}
                                             onChange={(e) => setAddressForm({ ...addressForm, houseNumber: e.target.value })}
                                             error={!!errors.houseNumber}
@@ -391,7 +425,10 @@ export default function CheckoutPage() {
                                     <Grid size={{ xs: 12 }}>
                                         <TextField
                                             fullWidth
+                                            id="checkout-area"
+                                            name="area"
                                             label="Area / Sector / Locality"
+                                            autoComplete="address-line2"
                                             value={addressForm.area}
                                             onChange={(e) => setAddressForm({ ...addressForm, area: e.target.value })}
                                             error={!!errors.area}
@@ -401,7 +438,10 @@ export default function CheckoutPage() {
                                     <Grid size={{ xs: 6 }}>
                                         <TextField
                                             fullWidth
+                                            id="checkout-city"
+                                            name="city"
                                             label="City"
+                                            autoComplete="address-level2"
                                             value={addressForm.city}
                                             onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
                                         />
@@ -409,7 +449,10 @@ export default function CheckoutPage() {
                                     <Grid size={{ xs: 6 }}>
                                         <TextField
                                             fullWidth
+                                            id="checkout-zip"
+                                            name="zip"
                                             label="Pincode"
+                                            autoComplete="postal-code"
                                             value={addressForm.zip}
                                             onChange={(e) => setAddressForm({ ...addressForm, zip: e.target.value })}
                                             error={!!errors.zip}
@@ -437,14 +480,16 @@ export default function CheckoutPage() {
                                     </Grid>
                                 </Grid>
 
-                                <Button
+                                <LoadingButton
                                     variant="contained"
                                     fullWidth
+                                    loading={loading}
+                                    loadingText="Saving Address..."
                                     onClick={handleSaveAddress}
                                     sx={{ mt: 5, py: 2, borderRadius: 2, fontWeight: 900 }}
                                 >
                                     Save Address and Continue
-                                </Button>
+                                </LoadingButton>
                             </Box>
                         )}
                     </Box>
@@ -603,7 +648,17 @@ export default function CheckoutPage() {
                                 ))}
                             </Stepper>
 
-                            {renderStepContent(activeStep)}
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={activeStep}
+                                    initial={{ opacity: 0, scale: 0.98 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.98 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    {renderStepContent(activeStep)}
+                                </motion.div>
+                            </AnimatePresence>
 
                             <Box sx={{ display: 'flex', flexDirection: { xs: 'column-reverse', sm: 'row' }, justifyContent: 'space-between', mt: 6, gap: 2 }}>
                                 <Button
@@ -616,15 +671,16 @@ export default function CheckoutPage() {
                                     Back
                                 </Button>
                                 {activeStep === steps.length - 1 ? (
-                                    <Button
+                                    <LoadingButton
                                         variant="contained"
                                         onClick={handlePlaceOrder}
-                                        disabled={placingOrder}
+                                        loading={placingOrder}
+                                        loadingText="Confirming..."
                                         fullWidth={isBelow425}
                                         sx={{ px: { xs: 4, sm: 8 }, py: 1.5, fontWeight: 900, borderRadius: 1.5 }}
                                     >
-                                        {placingOrder ? <CircularProgress size={24} color="inherit" /> : `Place Order (₹${calculateTotal().toFixed(2)})`}
-                                    </Button>
+                                        Place Order (₹{calculateTotal().toFixed(2)})
+                                    </LoadingButton>
                                 ) : (
                                     <Button
                                         variant="contained"
@@ -695,13 +751,15 @@ export default function CheckoutPage() {
                                             }
                                         }}
                                     />
-                                    <Button 
+                                    <LoadingButton 
                                         variant="contained" 
                                         onClick={handleApplyCoupon}
+                                        loading={loading}
+                                        loadingText="Checking..."
                                         sx={{ borderRadius: 2, fontWeight: 900, minWidth: 80 }}
                                     >
                                         Apply
-                                    </Button>
+                                    </LoadingButton>
                                 </Stack>
                                 {errors.coupon && (
                                     <Typography variant="caption" sx={{ color: '#f87171', fontWeight: 700, mt: 1, display: 'block' }}>
@@ -722,19 +780,31 @@ export default function CheckoutPage() {
 
                             <Stack spacing={2} sx={{ py: 2 }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Subtotal</Typography>
+                                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Item Total</Typography>
                                     <Typography variant="body2" sx={{ fontWeight: 800 }}>₹{calculateSubtotal().toFixed(2)}</Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Handling Fee</Typography>
+                                    <Typography variant="body2" sx={{ fontWeight: 800 }}>₹{cart.handlingFee}</Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Delivery Fee</Typography>
+                                    <Typography variant="body2" sx={{ fontWeight: 800, color: '#10b981' }}>
+                                        {parseFloat(cart.deliveryFee) === 0 ? 'FREE' : `₹${cart.deliveryFee}`}
+                                    </Typography>
                                 </Box>
                                 {calculateDiscount() > 0 && (
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 700 }}>Discount (Coupon)</Typography>
+                                        <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 700 }}>Coupon Discount</Typography>
                                         <Typography variant="body2" sx={{ fontWeight: 800, color: '#10b981' }}>-₹{calculateDiscount().toFixed(2)}</Typography>
                                     </Box>
                                 )}
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Delivery Fee</Typography>
-                                    <Typography variant="body2" sx={{ fontWeight: 800, color: 'primary.main' }}>₹{deliveryFee}.00</Typography>
-                                </Box>
+                                {calculatePromoDiscount() > 0 && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 700 }}>Special Offer</Typography>
+                                        <Typography variant="body2" sx={{ fontWeight: 800, color: '#10b981' }}>-₹{calculatePromoDiscount().toFixed(2)}</Typography>
+                                    </Box>
+                                )}
                             </Stack>
 
                             <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)', my: 2 }} />

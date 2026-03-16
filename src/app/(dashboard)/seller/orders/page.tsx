@@ -33,9 +33,13 @@ import {
     Cancel as CancelIcon,
     Inventory2Outlined as ProductIcon,
     Search as SearchIcon,
+    Phone as PhoneIcon,
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import OrderTimeline from '@/components/OrderTimeline';
+import { Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
+import { formatPhoneForDisplay } from '@/lib/phoneUtils';
 
 interface Order {
     id: number;
@@ -51,6 +55,10 @@ interface Order {
             price: string;
         };
     }[];
+    DeliveryPartner?: {
+        name: string;
+        phone: string;
+    };
 }
 
 export default function SellerOrdersPage() {
@@ -58,6 +66,10 @@ export default function SellerOrdersPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+
+    // Timeline State
+    const [timelineOrderId, setTimelineOrderId] = useState<number | null>(null);
+    const [timelineOpen, setTimelineOpen] = useState(false);
 
     const [totalItems, setTotalItems] = useState(0);
     const [page, setPage] = useState(0);
@@ -105,19 +117,26 @@ export default function SellerOrdersPage() {
         }
     };
 
+    const openTimeline = (id: number) => {
+        setTimelineOrderId(id);
+        setTimelineOpen(true);
+    };
+
     const getStatusConfig = (status: string) => {
         const configs: any = {
-            'pending': { color: '#ff9800', label: 'New Order', step: 1 },
-            'preparing': { color: '#9c27b0', label: 'Preparing', step: 2 },
-            'awaiting-assignment': { color: '#ff5722', label: 'Wait Assignment', step: 3 },
-            'assigned': { color: '#2196f3', label: 'Ready Dispatch', step: 4 },
-            'ready-to-ship': { color: '#2196f3', label: 'Admin Ready', step: 5 },
-            'shipped': { color: '#03a9f4', label: 'Shipped', step: 6 },
-            'out-for-delivery': { color: '#03a9f4', label: 'Out for Delivery', step: 7 },
-            'delivered': { color: '#0C831F', label: 'Delivered', step: 8 },
+            'pending': { color: '#ff9800', label: 'Pending', step: 1 },
+            'preparing': { color: '#9c27b0', label: 'Processing', step: 2 },
+            'awaiting-assignment': { color: '#ff5722', label: 'Processing', step: 3 },
+            'accepted-by-partner': { color: '#0C831F', label: 'Processing', step: 4 },
+            'assigned': { color: '#2196f3', label: 'Processing', step: 5 },
+            'ready-to-ship': { color: '#2196f3', label: 'Processing', step: 6 },
+            'shipped': { color: '#03a9f4', label: 'Shipped', step: 7 },
+            'out-for-delivery': { color: '#03a9f4', label: 'Out for Delivery', step: 8 },
+            'delivered': { color: '#0C831F', label: 'Completed', step: 9 },
+            'completed': { color: '#0C831F', label: 'Completed', step: 9 },
             'cancelled': { color: '#ef5350', label: 'Cancelled', step: 0 }
         };
-        return configs[status] || { color: '#747d8c', label: status, step: 0 };
+        return configs[status] || { color: '#747d8c', label: status.charAt(0).toUpperCase() + status.slice(1).replace(/-/g, ' '), step: 0 };
     };
 
     /* Server-side search and filter integrated into fetchOrders */
@@ -152,12 +171,12 @@ export default function SellerOrdersPage() {
                         onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
                         sx={{ borderRadius: '16px', bgcolor: 'white', fontWeight: 700 }}
                     >
-                        <MenuItem value="all" sx={{ fontWeight: 600 }}>All Statuses</MenuItem>
-                        <MenuItem value="pending" sx={{ fontWeight: 600 }}>New Orders</MenuItem>
-                        <MenuItem value="preparing" sx={{ fontWeight: 600 }}>Preparing</MenuItem>
-                        <MenuItem value="assigned" sx={{ fontWeight: 600 }}>Ready Dispatch</MenuItem>
-                        <MenuItem value="shipped" sx={{ fontWeight: 600 }}>In Transit</MenuItem>
-                        <MenuItem value="delivered" sx={{ fontWeight: 600 }}>Delivered</MenuItem>
+                        <MenuItem value="all" sx={{ fontWeight: 600 }}>All Orders</MenuItem>
+                        <MenuItem value="pending" sx={{ fontWeight: 600 }}>Pending</MenuItem>
+                        <MenuItem value="preparing" sx={{ fontWeight: 600 }}>Processing</MenuItem>
+                        <MenuItem value="shipped" sx={{ fontWeight: 600 }}>Shipped</MenuItem>
+                        <MenuItem value="completed" sx={{ fontWeight: 600 }}>Delivered</MenuItem>
+                        <MenuItem value="cancelled" sx={{ fontWeight: 600 }}>Cancelled</MenuItem>
                     </Select>
                 </FormControl>
             </Stack>
@@ -236,9 +255,9 @@ export default function SellerOrdersPage() {
                                             )}
 
                                             {/* Completed / Other States */}
-                                            {order.status === 'delivered' && (
+                                            {['delivered', 'completed'].includes(order.status) && (
                                                 <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 900, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    <DoneIcon fontSize="small" /> DELIVERED
+                                                    <DoneIcon fontSize="small" /> COMPLETED
                                                 </Typography>
                                             )}
                                             {order.status === 'cancelled' && (
@@ -296,6 +315,13 @@ export default function SellerOrdersPage() {
                                                         </Stack>
                                                         <Typography variant="body2" sx={{ fontWeight: 700 }}>{new Date(order.createdAt).toLocaleString()}</Typography>
                                                     </Box>
+                                                    {order.DeliveryPartner && (
+                                                        <Box sx={{ mt: 4, p: 2, borderRadius: 3, bgcolor: alpha('#0C831F', 0.05), border: '1px solid', borderColor: alpha('#0C831F', 0.1) }}>
+                                                            <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', color: '#0C831F', display: 'block', mb: 1 }}>Assigned Driver</Typography>
+                                                            <Typography variant="body2" sx={{ fontWeight: 900 }}>{order.DeliveryPartner.name}</Typography>
+                                                            <Button size="small" startIcon={<PhoneIcon />} sx={{ fontWeight: 800, p: 0, minWidth: 0, color: '#0C831F' }}>{formatPhoneForDisplay(order.DeliveryPartner.phone)}</Button>
+                                                        </Box>
+                                                    )}
                                                 </Box>
                                             </Grid>
                                         </Grid>
@@ -318,6 +344,23 @@ export default function SellerOrdersPage() {
                     onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
                 />
             </Paper>
+
+            {/* Timeline Dialog */}
+            <Dialog 
+                open={timelineOpen} 
+                onClose={() => setTimelineOpen(false)}
+                PaperProps={{ sx: { borderRadius: 6, p: 2, maxWidth: 500, width: '100%' } }}
+            >
+                <DialogTitle sx={{ fontWeight: 900, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    Tracking Timeline
+                    <IconButton size="small" onClick={() => setTimelineOpen(false)} sx={{ bgcolor: '#f1f5f9' }}>
+                        <CancelIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    {timelineOrderId && <OrderTimeline orderId={timelineOrderId} />}
+                </DialogContent>
+            </Dialog>
         </Box>
     );
 }

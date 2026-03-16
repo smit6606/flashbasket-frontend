@@ -21,6 +21,7 @@ import {
     Rating,
     CircularProgress,
 } from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     NavigateNext as NextIcon,
     ShoppingCartOutlined as CartIcon,
@@ -41,13 +42,17 @@ import { useFavourites } from '@/context/FavouriteContext';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import Link from 'next/link';
+import LoadingButton from '@/components/mui/LoadingButton';
+import { GridSkeleton } from '@/components/mui/SkeletonLoaders';
 
 interface Product {
     id: number;
     productName: string;
     description: string;
     price: string;
-    discountPrice?: string;
+    originalPrice?: string | number;
+    discountPercent?: number;
+    finalPrice?: string | number;
     stock: number;
     unit: string;
     images: string[];
@@ -176,19 +181,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
     if (loading) return (
         <Container maxWidth="lg" sx={{ py: 8 }}>
-            <Grid container spacing={8}>
+            <GridSkeleton count={1} type="product" />
+            {/* Extended detail skeleton */}
+            <Grid container spacing={8} sx={{ mt: 2 }}>
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Skeleton variant="rectangular" height={500} sx={{ borderRadius: 8 }} />
-                    <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-                        {[...Array(4)].map((_, i) => <Skeleton key={i} variant="rectangular" width={100} height={100} sx={{ borderRadius: 4 }} />)}
-                    </Stack>
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Skeleton width="40%" height={30} sx={{ mb: 2 }} />
                     <Skeleton width="80%" height={60} sx={{ mb: 2 }} />
                     <Skeleton width="30%" height={40} sx={{ mb: 4 }} />
-                    <Skeleton variant="rectangular" height={100} sx={{ borderRadius: 4, mb: 4 }} />
-                    <Skeleton variant="rectangular" height={60} sx={{ borderRadius: 4 }} />
+                    <Skeleton variant="rectangular" height={150} sx={{ borderRadius: 4, mb: 4 }} />
+                    <Skeleton variant="rectangular" height={60} sx={{ borderRadius: 1.5 }} />
                 </Grid>
             </Grid>
         </Container>
@@ -206,7 +210,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <Grid container spacing={8}>
                 {/* Left Gallery */}
                 <Grid size={{ xs: 12, md: 6.5 }}>
-                    <Box sx={{ position: 'sticky', top: 100 }}>
+                    <motion.div
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                        style={{ position: 'sticky', top: 100 }}
+                    >
                         <Paper elevation={0} sx={{
                             borderRadius: '32px',
                             overflow: 'hidden',
@@ -252,12 +261,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 </Box>
                             ))}
                         </Stack>
-                    </Box>
+                    </motion.div>
                 </Grid>
 
                 {/* Right Info */}
                 <Grid size={{ xs: 12, md: 5.5 }}>
-                    <Box>
+                    <motion.div
+                        initial={{ opacity: 0, x: 50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                    >
                         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
                             <Chip
                                 label={product.Category?.name}
@@ -312,14 +325,41 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             {product.unit}
                         </Typography>
 
-                        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 4 }}>
-                            <Typography variant="h3" sx={{ fontWeight: 900, color: 'primary.main' }}>
-                                ₹{product.price}
+                        <Stack spacing={1.5} sx={{ mb: 4 }}>
+                            <Stack direction="row" spacing={2} alignItems="center">
+                                <Box sx={{ 
+                                    bgcolor: '#0C831F', 
+                                    color: 'white', 
+                                    px: 2, 
+                                    py: 0.8, 
+                                    borderRadius: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    boxShadow: '0 4px 12px rgba(12, 131, 31, 0.2)'
+                                }}>
+                                    <Typography variant="h3" sx={{ fontWeight: 900 }}>
+                                        ₹{product.finalPrice || product.price}
+                                    </Typography>
+                                </Box>
+                                {(product.discountPercent || 0) > 0 && (
+                                    <Stack direction="row" spacing={1.5} alignItems="center">
+                                        <Typography variant="h5" sx={{ textDecoration: 'line-through', color: 'text.disabled', fontWeight: 700, opacity: 0.6 }}>
+                                            ₹{product.originalPrice || product.price}
+                                        </Typography>
+                                        <Typography sx={{ color: '#0C831F', fontWeight: 900, fontSize: '1.1rem' }}>
+                                            {product.discountPercent}% OFF
+                                        </Typography>
+                                    </Stack>
+                                )}
+                            </Stack>
+                            {(product.discountPercent || 0) > 0 && (
+                                <Typography variant="h6" sx={{ color: '#0C831F', fontWeight: 900, letterSpacing: '0.02em' }}>
+                                    You save ₹{(Number(product.originalPrice || product.price) - Number(product.finalPrice || product.price)).toFixed(0)}
+                                </Typography>
+                            )}
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
+                                (Inclusive of all taxes)
                             </Typography>
-                            <Typography variant="h5" sx={{ textDecoration: 'line-through', color: 'text.disabled', fontWeight: 700, opacity: 0.6 }}>
-                                ₹{Number(product.price) + 40}
-                            </Typography>
-                            <Chip label="SPECIAL PRICE" size="small" sx={{ fontWeight: 900, bgcolor: '#ffeded', color: '#ff4d4d', borderRadius: 2 }} />
                         </Stack>
 
                         <Paper elevation={0} sx={{ p: 4, borderRadius: '24px', bgcolor: '#f8fafc', border: '1px solid #f1f5f9', mb: 6 }}>
@@ -373,17 +413,19 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             </Stack>
 
                             {isEditingRating && userRating && (
-                                <Button
+                                <LoadingButton
                                     variant="contained"
                                     size="small"
-                                    onClick={() => {
-                                        submitRating(userRating);
+                                    loading={loading}
+                                    loadingText="Submitting..."
+                                    onClick={async () => {
+                                        await submitRating(userRating);
                                         setIsEditingRating(false);
                                     }}
                                     sx={{ mt: 2, borderRadius: 2, fontWeight: 900 }}
                                 >
                                     Submit Rating
-                                </Button>
+                                </LoadingButton>
                             )}
                         </Box>
 
@@ -419,11 +461,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                         </IconButton>
                                     </Box>
                                 ) : (
-                                    <Button
+                                    <LoadingButton
                                         fullWidth
                                         variant="contained"
                                         size="large"
-                                        disabled={product.stock <= 0 || updating}
+                                        loading={updating}
+                                        loadingText="Adding..."
+                                        disabled={product.stock <= 0}
                                         startIcon={product.stock > 0 && !updating ? <CartIcon /> : null}
                                         onClick={addToCartHandler}
                                         sx={{
@@ -431,19 +475,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                             py: 2,
                                             fontWeight: 900,
                                             fontSize: '1.1rem',
-                                            bgcolor: (product.stock <= 0 || updating) ? '#e2e8f0' : 'primary.main',
-                                            color: (product.stock <= 0 || updating) ? 'text.disabled' : 'white',
-                                            boxShadow: product.stock > 0 && !updating ? '0 12px 24px rgba(12, 131, 31, 0.25)' : 'none',
-                                            '&:hover': { bgcolor: (product.stock <= 0 || updating) ? '#e2e8f0' : 'primary.dark' }
+                                            bgcolor: 'primary.main',
+                                            boxShadow: product.stock > 0 ? '0 12px 24px rgba(12, 131, 31, 0.25)' : 'none',
                                         }}
                                     >
-                                        {updating ? (
-                                            <Stack direction="row" spacing={1} alignItems="center">
-                                                <CircularProgress size={20} color="inherit" />
-                                                <Typography variant="body1" sx={{ fontWeight: 900 }}>Processing...</Typography>
-                                            </Stack>
-                                        ) : (product.stock <= 0 ? 'Out of Stock' : 'Add to Cart')}
-                                    </Button>
+                                        {product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+                                    </LoadingButton>
                                 )}
                             </Box>
 
@@ -464,7 +501,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 </Stack>
                             </Stack>
                         </Stack>
-                    </Box>
+                    </motion.div>
                 </Grid>
             </Grid>
         </Container>

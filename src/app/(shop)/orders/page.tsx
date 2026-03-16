@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { formatPhoneForDisplay } from '@/lib/phoneUtils';
 import { 
     Box, 
     Stepper, 
@@ -19,9 +20,9 @@ import {
     Stack,
     Card,
     Grid,
-    Skeleton,
     Chip,
-    Dialog
+    Dialog,
+    Avatar
 } from '@mui/material';
 import { 
     CheckCircle as CheckIcon, 
@@ -32,6 +33,8 @@ import {
 } from '@mui/icons-material';
 
 import { toast } from 'react-toastify';
+import OrderTimeline from '@/components/OrderTimeline';
+import { GridSkeleton } from '@/components/mui/SkeletonLoaders';
 
 interface Order {
     id: number;
@@ -48,13 +51,17 @@ interface Order {
             price: string;
         };
     }[];
+    DeliveryPartner?: {
+        name: string;
+        phone: string;
+    };
 }
 
 export default function OrdersPage() {
-    const { token, user } = useAuth();
+    const { token, user, loading: authLoading } = useAuth();
     const router = useRouter();
     const [orders, setOrders] = useState<Order[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [ordersLoading, setOrdersLoading] = useState(true);
 
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
@@ -78,8 +85,10 @@ export default function OrdersPage() {
     };
 
     useEffect(() => {
+        if (authLoading) return; // Wait for hydration before making routing decisions
+
         if (!token) {
-            router.push('/login');
+            router.push('/login?callbackUrl=/orders');
             return;
         }
 
@@ -95,14 +104,16 @@ export default function OrdersPage() {
             } catch (err) {
                 console.error('Failed to fetch orders', err);
             } finally {
-                setLoading(false);
+                setOrdersLoading(false);
             }
         };
 
         if (user && user.role === 'user') {
             fetchOrders();
+        } else {
+            setOrdersLoading(false);
         }
-    }, [token, user, router]);
+    }, [token, user, router, authLoading]);
 
     const handleCancelClick = (id: number) => {
         setSelectedOrderId(id);
@@ -135,15 +146,9 @@ export default function OrdersPage() {
         }
     };
 
-    if (loading) return (
+    if (authLoading || ordersLoading) return (
         <Box sx={{ maxWidth: 900, mx: 'auto', p: { xs: 2, md: 4 } }}>
-            <Skeleton variant="text" width={300} height={60} sx={{ mb: 1, borderRadius: 2 }} />
-            <Skeleton variant="text" width={200} height={30} sx={{ mb: 6, borderRadius: 2 }} />
-            <Stack spacing={4}>
-                {[1, 2].map((i) => (
-                    <Skeleton key={i} variant="rectangular" height={350} sx={{ borderRadius: 8 }} />
-                ))}
-            </Stack>
+            <GridSkeleton count={2} type="order" />
         </Box>
     );
 
@@ -161,7 +166,7 @@ export default function OrdersPage() {
                     <Button 
                         variant="contained" 
                         component={Link} 
-                        href="/"
+                        href="/products"
                         sx={{ bgcolor: '#0C831F', fontWeight: 900, px: 6, py: 2, borderRadius: 5 }}
                     >
                         Start Shopping
@@ -182,7 +187,7 @@ export default function OrdersPage() {
                                         <Typography variant="h5" sx={{ fontWeight: 900, mb: 1 }}>#{order.orderNumber}</Typography>
                                         <Chip 
                                             icon={isCompleted ? <CheckIcon fontSize="small"/> : isCancelled ? undefined : <TimeIcon fontSize="small"/>}
-                                            label={isCompleted ? "Delivered" : isCancelled ? "Cancelled" : "In Progress"} 
+                                            label={isCompleted ? "Completed" : isCancelled ? "Cancelled" : "Processing"} 
                                             size="small" 
                                             sx={{ 
                                                 bgcolor: isCompleted ? alpha('#10b981', 0.2) : isCancelled ? alpha('#ef4444', 0.2) : alpha('#f59e0b', 0.2), 
@@ -280,6 +285,23 @@ export default function OrdersPage() {
                                                     </Box>
                                                 )}
                                             </Paper>
+
+                                            {order.DeliveryPartner && (
+                                                <Box sx={{ mt: 3, p: 3, borderRadius: 4, bgcolor: alpha('#0C831F', 0.05), border: '1px solid', borderColor: alpha('#0C831F', 0.1) }}>
+                                                    <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', color: '#0C831F', display: 'block', mb: 1 }}>Delivery Partner</Typography>
+                                                    <Stack direction="row" spacing={2} alignItems="center">
+                                                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#0C831F', fontSize: '0.8rem' }}>{order.DeliveryPartner.name.charAt(0)}</Avatar>
+                                                        <Box>
+                                                            <Typography variant="body2" sx={{ fontWeight: 800 }}>{order.DeliveryPartner.name}</Typography>
+                                                            <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>{formatPhoneForDisplay(order.DeliveryPartner.phone)}</Typography>
+                                                        </Box>
+                                                    </Stack>
+                                                </Box>
+                                            )}
+
+                                            <Box sx={{ mt: 3, p: 2, bgcolor: '#f8fafc', borderRadius: 4 }}>
+                                                <OrderTimeline orderId={order.id} />
+                                            </Box>
                                         </Grid>
                                     </Grid>
 
@@ -315,7 +337,7 @@ export default function OrdersPage() {
                                         )}
                                         {isCompleted && (
                                             <Typography variant="caption" sx={{ color: '#0C831F', fontWeight: 900, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <CheckIcon fontSize="small" /> ✔ Delivered Successfully | Order Completed
+                                                <CheckIcon fontSize="small" /> Order Completed Successfully
                                             </Typography>
                                         )}
                                     </Box>

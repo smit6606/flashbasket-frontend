@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import "./globals.css";
+import NavigationLoader from "@/components/animations/NavigationLoader";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { FavouriteProvider } from "@/context/FavouriteContext";
@@ -7,6 +9,7 @@ import { SocketProvider } from "@/context/SocketContext";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ThemeRegistry from "@/theme/ThemeRegistry";
+import NotificationManager from "@/components/NotificationManager";
 
 export const metadata: Metadata = {
   title: "FlashBasket | Lightning Fast Marketplace",
@@ -26,7 +29,11 @@ export default function RootLayout({
             <CartProvider>
               <FavouriteProvider>
                 <SocketProvider>
+                  <Suspense fallback={null}>
+                    <NavigationLoader />
+                  </Suspense>
                   {children}
+                  <NotificationManager />
                 </SocketProvider>
               </FavouriteProvider>
             </CartProvider>

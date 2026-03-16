@@ -31,6 +31,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import MuiBackButton from './MuiBackButton';
+import ConfirmDialog from './ConfirmDialog';
 
 const DRAWER_WIDTH = 280;
 
@@ -43,6 +44,7 @@ export default function MuiTopBar({ onMenuClick }: TopBarProps) {
     const router = useRouter();
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const open = Boolean(anchorEl);
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -54,6 +56,7 @@ export default function MuiTopBar({ onMenuClick }: TopBarProps) {
     };
 
     const handleLogout = () => {
+        setIsLogoutModalOpen(false);
         handleClose();
         logout();
         router.push('/login');
@@ -234,16 +237,25 @@ export default function MuiTopBar({ onMenuClick }: TopBarProps) {
                             Account Settings
                         </MenuItem>
                         <Divider />
-                        <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+                        <MenuItem onClick={() => { setIsLogoutModalOpen(true); handleClose(); }} sx={{ color: 'error.main' }}>
                             <ListItemIcon>
                                 <LogoutIcon fontSize="small" sx={{ color: 'error.main' }} />
                             </ListItemIcon>
                             Logout
                         </MenuItem>
                     </Menu>
-
                 </Box>
             </Toolbar>
+
+            <ConfirmDialog
+                open={isLogoutModalOpen}
+                onClose={() => setIsLogoutModalOpen(false)}
+                onConfirm={handleLogout}
+                title="Logout Confirmation"
+                message="Are you sure you want to log out from the dashboard?"
+                confirmText="Logout"
+                type="danger"
+            />
         </AppBar>
     );
 }

@@ -9,6 +9,7 @@ import {
     CardContent,
     TextField,
     Button,
+    InputAdornment,
     Avatar,
     Stack,
     Divider,
@@ -32,12 +33,16 @@ import {
 } from '@mui/icons-material';
 import { Breadcrumbs, Link as MuiLink } from '@mui/material';
 import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import { normalizePhoneForBackend, isValidPhone } from '@/lib/phoneUtils';
+import GoogleMapPicker from '@/components/GoogleMapPicker';
 
 export default function ProfileEditor() {
     const { user, refreshUser } = useAuth();
+    const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [passLoading, setPassLoading] = useState(false);
     const [openPassModal, setOpenPassModal] = useState(false);
@@ -75,7 +80,7 @@ export default function ProfileEditor() {
                 owner_name: user.owner_name || '',
                 user_name: user.user_name || '',
                 email: user.email || '',
-                phone: user.phone || '',
+                phone: user.phone ? user.phone.replace('+91', '') : '',
                 address: user.address || '',
                 city: user.city || '',
                 state: user.state || '',
@@ -90,7 +95,31 @@ export default function ProfileEditor() {
     }, [user]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        let { name, value } = e.target;
+        if (name === 'phone') {
+            value = value.replace(/[^\d]/g, '').slice(0, 10);
+        }
+        setFormData({ ...formData, [name]: value });
+    };
+
+    const handleLocationSelect = (data: { lat: number; lng: number; address: string }) => {
+        const zipMatch = data.address.match(/\b\d{6}\b/);
+        const parts = data.address.split(',');
+        const cityCandidate = parts.length > 2 ? parts[parts.length - 3].trim() : '';
+        
+        setFormData(prev => ({
+            ...prev,
+            latitude: data.lat.toString(),
+            longitude: data.lng.toString(),
+            address: data.address || prev.address,
+            city: cityCandidate || prev.city,
+            pincode: zipMatch ? zipMatch[0] : prev.pincode
+        }));
+        
+        toast.info("Location synchronized! Address details pre-filled.", {
+            icon: <span>📍</span>,
+            toastId: 'profile-loc'
+        });
     };
 
     const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,7 +156,15 @@ export default function ProfileEditor() {
         try {
             const data = new FormData();
             Object.keys(formData).forEach(key => {
-                const value = (formData as any)[key];
+                let value = (formData as any)[key];
+                
+                if (key === 'phone') {
+                    if (!isValidPhone(value)) {
+                        throw new Error('Please enter a valid 10-digit phone number');
+                    }
+                    value = normalizePhoneForBackend(value);
+                }
+
                 if (value !== undefined && value !== null) {
                     // Skip empty strings for coordinates to avoid backend decimal errors
                     if ((key === 'latitude' || key === 'longitude') && value === '') {
@@ -143,8 +180,9 @@ export default function ProfileEditor() {
 
             await api.patch('/auth/profile-update', data);
             await refreshUser();
-            toast.success('Profile Updated');
+            toast.success('Profile Updated Successfully!');
             setImageFile(null);
+            // Stay on page — do NOT redirect to home. Just refresh user data.
         } catch (err: any) {
             toast.error(err.message || 'Update failed');
         } finally {
@@ -179,49 +217,7 @@ export default function ProfileEditor() {
 
     return (
         <Box sx={{ maxWidth: 1000, mx: 'auto', p: { xs: 2, md: 4 } }}>
-            <Breadcrumbs 
-                separator={<NextIcon fontSize="small" sx={{ color: '#94a3b8' }} />} 
-                aria-label="breadcrumb"
-                sx={{ mb: 3 }}
-            >
-                <MuiLink
-                    component={Link}
-                    underline="hover"
-                    sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        color: 'text.secondary',
-                        fontWeight: 700,
-                        fontSize: '0.85rem'
-                    }}
-                    href="/"
-                >
-                    <HomeIcon sx={{ mr: 0.5, fontSize: '1rem' }} />
-                    Home
-                </MuiLink>
-                <Typography
-                    sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        color: 'text.secondary',
-                        fontWeight: 700,
-                        fontSize: '0.85rem'
-                    }}
-                >
-                    Account
-                </Typography>
-                <Typography
-                    sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        color: '#0C831F',
-                        fontWeight: 900,
-                        fontSize: '0.85rem'
-                    }}
-                >
-                    Profile Settings
-                </Typography>
-            </Breadcrumbs>
+
 
             <Box sx={{ mb: 6 }}>
                 <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.03em' }}>
@@ -326,25 +322,45 @@ export default function ProfileEditor() {
                                             {isSeller ? (
                                                 <>
                                                     <Grid size={{ xs: 12, md: 6 }}>
-                                                        <TextField fullWidth label="Shop Name" name="shop_name" value={formData.shop_name} onChange={handleChange} required InputProps={{ sx: { borderRadius: 4 } }} />
+                                                        <TextField fullWidth id="profile-shop_name" label="Shop Name" name="shop_name" autoComplete="organization" value={formData.shop_name} onChange={handleChange} required InputProps={{ sx: { borderRadius: 4 } }} />
                                                     </Grid>
                                                     <Grid size={{ xs: 12, md: 6 }}>
-                                                        <TextField fullWidth label="Owner Name" name="owner_name" value={formData.owner_name} onChange={handleChange} required InputProps={{ sx: { borderRadius: 4 } }} />
+                                                        <TextField fullWidth id="profile-owner_name" label="Owner Name" name="owner_name" autoComplete="name" value={formData.owner_name} onChange={handleChange} required InputProps={{ sx: { borderRadius: 4 } }} />
                                                     </Grid>
                                                 </>
                                             ) : (
                                                 <Grid size={{ xs: 12, md: 6 }}>
-                                                    <TextField fullWidth label="Full Name" name="name" value={formData.name} onChange={handleChange} required InputProps={{ sx: { borderRadius: 4 } }} />
+                                                    <TextField fullWidth id="profile-name" label="Full Name" name="name" autoComplete="name" value={formData.name} onChange={handleChange} required InputProps={{ sx: { borderRadius: 4 } }} />
                                                 </Grid>
                                             )}
                                             <Grid size={{ xs: 12, md: 6 }}>
-                                                <TextField fullWidth label="Username" name="user_name" value={formData.user_name} disabled InputProps={{ sx: { borderRadius: 4, bgcolor: '#f8fafc' } }} />
+                                                <TextField fullWidth id="profile-user_name" label="Username" name="user_name" autoComplete="username" value={formData.user_name} disabled InputProps={{ sx: { borderRadius: 4, bgcolor: '#f8fafc' } }} />
                                             </Grid>
                                             <Grid size={{ xs: 12, md: 6 }}>
-                                                <TextField fullWidth label="Email Address" type="email" name="email" value={formData.email} disabled InputProps={{ sx: { borderRadius: 4, bgcolor: '#f8fafc' } }} />
+                                                <TextField fullWidth id="profile-email" label="Email Address" type="email" name="email" autoComplete="email" value={formData.email} disabled InputProps={{ sx: { borderRadius: 4, bgcolor: '#f8fafc' } }} />
                                             </Grid>
                                             <Grid size={{ xs: 12, md: 6 }}>
-                                                <TextField fullWidth label="Phone Number" name="phone" value={formData.phone} onChange={handleChange} required InputProps={{ sx: { borderRadius: 4 } }} />
+                                                <TextField 
+                                                    fullWidth 
+                                                    id="profile-phone" 
+                                                    label="Phone Number" 
+                                                    name="phone" 
+                                                    autoComplete="tel" 
+                                                    value={formData.phone} 
+                                                    onChange={handleChange} 
+                                                    required 
+                                                    placeholder="9876543210"
+                                                    InputProps={{ 
+                                                        startAdornment: (
+                                                            <InputAdornment position="start">
+                                                                <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary', borderRight: '1px solid #e2e8f0', pr: 1.5, mr: 1 }}>
+                                                                    +91
+                                                                </Typography>
+                                                            </InputAdornment>
+                                                        ),
+                                                        sx: { borderRadius: 4 } 
+                                                    }} 
+                                                />
                                             </Grid>
                                             {isDelivery && (
                                                 <Grid size={{ xs: 12, md: 6 }}>
@@ -359,6 +375,11 @@ export default function ProfileEditor() {
                                             <Box sx={{ width: 8, height: 24, bgcolor: '#3b82f6', borderRadius: 4 }} />
                                             Address & Location
                                         </Typography>
+                                        
+                                        <Box sx={{ mb: 4, borderRadius: 5, overflow: 'hidden', border: '1px solid #f1f5f9' }}>
+                                            <GoogleMapPicker onLocationSelect={handleLocationSelect} />
+                                        </Box>
+
                                         <Grid container spacing={3}>
                                             <Grid size={{ xs: 12 }}>
                                                 <TextField fullWidth label="Street Address" name="address" value={formData.address} onChange={handleChange} multiline rows={2} InputProps={{ sx: { borderRadius: 4 } }} />
@@ -462,27 +483,33 @@ export default function ProfileEditor() {
                     <Stack spacing={3}>
                         <TextField 
                             fullWidth 
+                            id="change-currentPassword"
                             type="password" 
                             label="Current Password" 
                             name="currentPassword"
+                            autoComplete="current-password"
                             value={passwordData.currentPassword}
                             onChange={handlePasswordChange}
                             InputProps={{ sx: { borderRadius: 4 } }} 
                         />
                         <TextField 
                             fullWidth 
+                            id="change-newPassword"
                             type="password" 
                             label="New Password" 
                             name="newPassword"
+                            autoComplete="new-password"
                             value={passwordData.newPassword}
                             onChange={handlePasswordChange}
                             InputProps={{ sx: { borderRadius: 4 } }} 
                         />
                         <TextField 
                             fullWidth 
+                            id="change-confirmPassword"
                             type="password" 
                             label="Confirm New Password" 
                             name="confirmPassword"
+                            autoComplete="new-password"
                             value={passwordData.confirmPassword}
                             onChange={handlePasswordChange}
                             InputProps={{ sx: { borderRadius: 4 } }} 

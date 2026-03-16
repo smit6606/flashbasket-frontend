@@ -33,6 +33,7 @@ import {
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import ConfirmDialog from '@/components/mui/ConfirmDialog';
 
 export default function AdminCategories() {
     const [categories, setCategories] = useState<any[]>([]);
@@ -48,6 +49,11 @@ export default function AdminCategories() {
     const [sortBy, setSortBy] = useState('createdAt');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [statusFilter, setStatusFilter] = useState('all');
+
+    // Confirm Dialog States
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [selectedCatId, setSelectedCatId] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -99,14 +105,24 @@ export default function AdminCategories() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm('Are you sure? This will affect all subcategories and products.')) return;
+    const handleDeleteClick = (id: number) => {
+        setSelectedCatId(id);
+        setDeleteOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!selectedCatId) return;
         try {
-            await api.delete(`/categories/${id}`);
+            setIsDeleting(true);
+            await api.delete(`/categories/${selectedCatId}`);
             toast.success('Category deleted');
+            setDeleteOpen(false);
             fetchCategories();
         } catch (err: any) {
             toast.error('Failed to delete category');
+        } finally {
+            setIsDeleting(false);
+            setSelectedCatId(null);
         }
     };
 
@@ -321,7 +337,7 @@ export default function AdminCategories() {
                                             >
                                                 {cat.status === 'inactive' ? 'Activate' : 'Hide / Inactivate'}
                                             </Button>
-                                            <IconButton size="small" color="error" onClick={() => handleDelete(cat.id)} sx={{ '&:hover': { bgcolor: alpha('#ef4444', 0.05) } }}>
+                                            <IconButton size="small" color="error" onClick={() => handleDeleteClick(cat.id)} sx={{ '&:hover': { bgcolor: alpha('#ef4444', 0.05) } }}>
                                                 <DeleteIcon fontSize="small" />
                                             </IconButton>
                                         </Stack>
@@ -360,6 +376,18 @@ export default function AdminCategories() {
                     </Paper>
                 </Grid>
             </Grid>
+
+            <ConfirmDialog
+                open={deleteOpen}
+                onClose={() => setDeleteOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Category"
+                message="Are you sure you want to permanently delete this category? This will remove all associated subcategories and marketplace products. This action cannot be undone."
+                confirmText="Yes, Delete Everything"
+                cancelText="No, Keep It"
+                type="danger"
+                loading={isDeleting}
+            />
         </Box>
     );
 }

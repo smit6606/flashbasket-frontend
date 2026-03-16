@@ -12,25 +12,45 @@ export default function DashboardSidebar() {
 
     const menuItems = {
         admin: [
-            { name: 'Dashboard Layout', path: '/admin', icon: '📊' },
-            { name: 'Users Center', path: '/admin/users', icon: '👥' },
-            { name: 'Seller Stores', path: '/admin/sellers', icon: '🏪' },
-            { name: 'Network Analytics', path: '/admin/analytics', icon: '📈' },
+            { name: 'Dashboard', path: '/admin', icon: '📊', exact: true },
+            { name: 'Orders', path: '/admin/orders', icon: '🛒' },
+            { name: 'Users', path: '/admin/users', icon: '👥' },
+            { name: 'Sellers', path: '/admin/sellers', icon: '🏪' },
+            { name: 'Delivery Drivers', path: '/admin/delivery', icon: '🚚' },
+            { name: 'Categories', path: '/admin/categories', icon: '📁' },
+            { name: 'Products', path: '/admin/products', icon: '📦' },
+            { name: 'Reports', path: '/admin/analytics', icon: '📈' },
+            { name: 'Settings', path: '/admin/settings', icon: '⚙️' },
         ],
         seller: [
-            { name: 'Store Dashboard', path: '/seller', icon: '🏪' },
-            { name: 'My Products', path: '/seller/products', icon: '📦' },
-            { name: 'Active Orders', path: '/seller/orders', icon: '🛒' },
-            { name: 'Store Analytics', path: '/seller/analytics', icon: '💸' },
+            { name: 'Dashboard', path: '/seller', icon: '🏠', exact: true },
+            { name: 'Live Orders', path: '/seller/orders', icon: '🛒' },
+            { name: 'Past Orders', path: '/seller/history', icon: '📜' },
+            { name: 'My Catalog', path: '/seller/products', icon: '📦' },
+            { name: 'Sales Insights', path: '/seller/analytics', icon: '📊' },
+            { name: 'Store Account', path: '/seller/account', icon: '👤' },
         ],
         delivery: [
-            { name: 'Driver Hub', path: '/delivery', icon: '🚚' },
-            { name: 'Active Trips', path: '/delivery/trips', icon: '🗺️' },
+            { name: 'Dashboard', path: '/delivery', icon: '🚚', exact: true },
+            { name: 'Active Trips', path: '/delivery/trips', icon: '🏍️' },
+            { name: 'Past Orders', path: '/delivery/history', icon: '📜' },
             { name: 'Earnings', path: '/delivery/earnings', icon: '💰' },
+            { name: 'Account', path: '/delivery/profile', icon: '👤' },
         ]
     };
 
     const links = menuItems[role as keyof typeof menuItems] || menuItems.admin;
+
+    // root-level paths need exact match to avoid mis-highlighting Dashboard
+    // when subroutes are active (e.g. /delivery/history matching /delivery)
+    const rootPaths = ['/admin', '/seller', '/delivery'];
+
+    const isActivePath = (linkPath: string, exact?: boolean) => {
+        if (exact || rootPaths.includes(linkPath)) {
+            return pathname === linkPath;
+        }
+        return pathname === linkPath || pathname.startsWith(`${linkPath}/`);
+    };
 
     return (
         <aside className="w-[280px] bg-[#1e293b] text-white flex flex-col min-h-screen border-r border-slate-800 shadow-2xl relative z-10 hidden md:flex">
@@ -48,7 +68,7 @@ export default function DashboardSidebar() {
                 <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Main Navigation</p>
 
                 {links.map((link) => {
-                    const isActive = pathname === link.path || pathname.startsWith(`${link.path}/`);
+                    const isActive = isActivePath(link.path, (link as any).exact);
                     return (
                         <Link key={link.name} href={link.path}>
                             <div
@@ -67,12 +87,12 @@ export default function DashboardSidebar() {
 
             <div className="p-6 border-t border-slate-700/50 bg-[#0f172a]/20">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300">
-                        {user?.name?.charAt(0) || 'U'}
+                    <div className="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black text-base">
+                        {user?.user_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || '?'}
                     </div>
                     <div className="flex-1 overflow-hidden">
-                        <p className="text-sm font-bold text-white truncate">{user?.name || 'Administrator'}</p>
-                        <p className="text-xs text-slate-400 truncate">{user?.email || 'admin@flashbasket.com'}</p>
+                        <p className="text-sm font-bold text-white truncate">{user?.user_name || user?.email || 'User'}</p>
+                        <p className="text-xs text-slate-400 truncate capitalize">{user?.role || 'driver'} · {user?.email || ''}</p>
                     </div>
                 </div>
             </div>

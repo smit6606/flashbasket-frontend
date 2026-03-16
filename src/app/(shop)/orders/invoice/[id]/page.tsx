@@ -21,6 +21,7 @@ import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { formatPhoneForDisplay } from '@/lib/phoneUtils';
 
 interface InvoiceData {
     invoiceNumber: string;
@@ -100,7 +101,7 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
         doc.text(invoice.customer.name, 20, 58);
         doc.setFontSize(10);
         doc.text(invoice.customer.email, 20, 64);
-        doc.text(invoice.customer.phone, 20, 70);
+        doc.text(formatPhoneForDisplay(invoice.customer.phone), 20, 70);
         doc.text(invoice.customer.address, 20, 76, { maxWidth: 80 });
 
         // Details
@@ -211,7 +212,7 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
                         <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'text.secondary', mb: 2, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Billed To</Typography>
                         <Typography variant="h6" sx={{ fontWeight: 900, mb: 0.5 }}>{invoice.customer.name}</Typography>
                         <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>{invoice.customer.email}</Typography>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>{invoice.customer.phone}</Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>{formatPhoneForDisplay(invoice.customer.phone)}</Typography>
                         <Typography variant="body2" sx={{ mt: 2, fontWeight: 700, maxWidth: 300 }}>{invoice.customer.address}</Typography>
                     </Grid>
                     <Grid size={{ xs: 6 }} sx={{ textAlign: 'right' }}>

@@ -18,9 +18,11 @@ import {
     Tooltip,
     useScrollTrigger,
     Slide,
+    Zoom,
     Divider,
     useMediaQuery,
 } from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search as SearchIcon,
     ShoppingCart as ShoppingCartIcon,
@@ -37,6 +39,7 @@ import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import MuiBackButton from './MuiBackButton';
 import MobileNavbarDrawer from './MobileNavbarDrawer';
+import ConfirmDialog from './ConfirmDialog';
 
 const Search = styled('div')(({ theme }) => ({
     position: 'relative',
@@ -100,6 +103,7 @@ export default function MuiNavbar() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [showMobileSearch, setShowMobileSearch] = useState(false);
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
     // Responsive Breakpoints
     const isBelow1359 = useMediaQuery('(max-width:1359px)');
@@ -149,6 +153,7 @@ export default function MuiNavbar() {
 
     const handleLogout = () => {
         logout();
+        setIsLogoutModalOpen(false);
         handleClose();
         router.push('/login');
     };
@@ -176,10 +181,11 @@ export default function MuiNavbar() {
                 >
                     <Container maxWidth="xl" sx={{ px: { xs: 1.5, sm: 2 } }}>
                         <Toolbar disableGutters sx={{ minHeight: { xs: 60, md: 80 }, gap: { xs: 0.5, sm: 1.5, md: 2 }, justifyContent: 'space-between' }}>
-                            {/* Logo Container */}
                             <Box
-                                component={Link}
+                                component={motion.create(Link)}
                                 href="/"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 sx={{
                                     display: 'flex',
                                     alignItems: 'center',
@@ -225,6 +231,8 @@ export default function MuiNavbar() {
                                         <SearchIcon sx={{ color: 'text.secondary', fontSize: '1.2rem' }} />
                                     </SearchIconWrapper>
                                     <StyledInputBase
+                                        id="search-input"
+                                        name="search"
                                         placeholder="Search products..."
                                         inputProps={{ 'aria-label': 'search' }}
                                         value={searchQuery}
@@ -245,9 +253,11 @@ export default function MuiNavbar() {
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1.5, md: 2 }, flexShrink: 0 }}>
                             {/* Search Icon for mobile screens */}
                             {isBelow768 && !isBelow425 && (
-                                <IconButton onClick={() => setShowMobileSearch(!showMobileSearch)} sx={{ color: 'text.secondary' }}>
-                                    {showMobileSearch ? <CloseIcon /> : <SearchIcon />}
-                                </IconButton>
+                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                                    <IconButton onClick={() => setShowMobileSearch(!showMobileSearch)} sx={{ color: 'text.secondary' }}>
+                                        {showMobileSearch ? <CloseIcon /> : <SearchIcon />}
+                                    </IconButton>
+                                </motion.div>
                             )}
 
                                 {!user ? (
@@ -292,13 +302,35 @@ export default function MuiNavbar() {
                                                 <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary', whiteSpace: 'nowrap' }}>
                                                     {user.user_name}
                                                 </Typography>
-                                                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                                                    Buyer
+                                                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'capitalize' }}>
+                                                    {user.role}
                                                 </Typography>
                                             </Box>
                                         )}
                                         {!isBelow425 && (
-                                            <Tooltip title="Profile">
+                                            <Tooltip 
+                                                title="Manage Profile" 
+                                                arrow 
+                                                TransitionComponent={Zoom}
+                                                slotProps={{
+                                                    tooltip: {
+                                                        sx: {
+                                                            bgcolor: '#1e293b',
+                                                            fontWeight: 800,
+                                                            borderRadius: 2,
+                                                            fontSize: '0.75rem',
+                                                            px: 1.5,
+                                                            py: 0.75,
+                                                            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
+                                                        }
+                                                    },
+                                                    arrow: {
+                                                        sx: {
+                                                            color: '#1e293b'
+                                                        }
+                                                    }
+                                                }}
+                                            >
                                                 <IconButton onClick={handleMenu} sx={{ p: 0.5 }}>
                                                     <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', fontSize: '0.9rem', fontWeight: 700 }}>
                                                         {user.user_name?.charAt(0).toUpperCase()}
@@ -314,51 +346,64 @@ export default function MuiNavbar() {
                                                 sx: { mt: 1.5, minWidth: 200, borderRadius: 2, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }
                                             }}
                                         >
-                                            <MenuItem onClick={() => { handleClose(); router.push('/user/profile'); }}>Profile</MenuItem>
-                                            <MenuItem onClick={() => { handleClose(); router.push('/user/favourites'); }}>Favourites</MenuItem>
-                                            <MenuItem onClick={() => { handleClose(); router.push('/orders'); }}>Orders</MenuItem>
+                                            <MenuItem onClick={() => { handleClose(); window.location.href = '/'; }}>Profile</MenuItem>
+                                            {user.role === 'delivery' && (
+                                                <MenuItem onClick={() => { handleClose(); router.push('/delivery'); }} sx={{ fontWeight: 800, color: 'primary.main' }}>Delivery Panel</MenuItem>
+                                            )}
+                                            {user.role === 'user' && [
+                                                <MenuItem key="favourites" onClick={() => { handleClose(); router.push('/user/favourites'); }}>Favourites</MenuItem>,
+                                                <MenuItem key="orders" onClick={() => { handleClose(); router.push('/orders'); }}>Orders</MenuItem>,
+                                            ]}
+                                            {user.role === 'seller' && (
+                                                <MenuItem onClick={() => { handleClose(); router.push('/seller'); }}>Seller Dashboard</MenuItem>
+                                            )}
+                                            {user.role === 'admin' && (
+                                                <MenuItem onClick={() => { handleClose(); router.push('/admin'); }}>Admin Dashboard</MenuItem>
+                                            )}
                                             <Divider />
-                                            <MenuItem onClick={handleLogout} sx={{ color: 'error.main', fontWeight: 700 }}>Logout</MenuItem>
+                                            <MenuItem onClick={() => { setIsLogoutModalOpen(true); handleClose(); }} sx={{ color: 'error.main', fontWeight: 700 }}>Logout</MenuItem>
                                         </Menu>
                                     </>
                                 )}
 
                                 {/* Cart - Simplified on mobile */}
-                                <Button
-                                    component={Link}
-                                    href="/cart"
-                                    variant={isBelow768 ? "text" : "contained"}
-                                    startIcon={
-                                        <Badge badgeContent={cartCount} color="error">
-                                            <ShoppingCartIcon sx={{ 
-                                                fontSize: isBelow768 ? '1.75rem' : 'inherit',
-                                                color: isBelow768 ? 'primary.main' : 'inherit'
-                                            }} />
-                                        </Badge>
-                                    }
-                                    sx={{
-                                        bgcolor: isBelow768 ? 'transparent' : 'primary.main',
-                                        color: isBelow768 ? 'primary.main' : 'white',
-                                        fontWeight: 900,
-                                        borderRadius: 2,
-                                        px: isBelow768 ? 1 : (isBelow900 ? 2 : 4),
-                                        py: isBelow900 ? 1 : 1.5,
-                                        minWidth: 'auto',
-                                        fontSize: isBelow900 ? '0.85rem' : '1rem',
-                                        boxShadow: isBelow768 ? 'none' : '0 8px 16px rgba(12, 131, 31, 0.2)',
-                                        '&:hover': { 
-                                            bgcolor: isBelow768 ? alpha('#0C831F', 0.05) : 'primary.dark',
-                                            boxShadow: isBelow768 ? 'none' : '0 12px 20px rgba(12, 131, 31, 0.3)'
-                                        },
-                                        whiteSpace: 'nowrap',
-                                        '& .MuiButton-startIcon': {
-                                            margin: isBelow768 ? 0 : '0 8px 0 -4px',
-                                            mr: isBelow768 ? 0 : 1
+                                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                    <Button
+                                        component={Link}
+                                        href="/cart"
+                                        variant={isBelow768 ? "text" : "contained"}
+                                        startIcon={
+                                            <Badge badgeContent={cartCount} color="error">
+                                                <ShoppingCartIcon sx={{ 
+                                                    fontSize: isBelow768 ? '1.75rem' : 'inherit',
+                                                    color: isBelow768 ? 'primary.main' : 'inherit'
+                                                }} />
+                                            </Badge>
                                         }
-                                    }}
-                                >
-                                    {!isBelow768 && 'My Cart'}
-                                </Button>
+                                        sx={{
+                                            bgcolor: isBelow768 ? 'transparent' : 'primary.main',
+                                            color: isBelow768 ? 'primary.main' : 'white',
+                                            fontWeight: 900,
+                                            borderRadius: 2,
+                                            px: isBelow768 ? 1 : (isBelow900 ? 2 : 4),
+                                            py: isBelow900 ? 1 : 1.5,
+                                            minWidth: 'auto',
+                                            fontSize: isBelow900 ? '0.85rem' : '1rem',
+                                            boxShadow: isBelow768 ? 'none' : '0 8px 16px rgba(12, 131, 31, 0.2)',
+                                            '&:hover': { 
+                                                bgcolor: isBelow768 ? alpha('#0C831F', 0.05) : 'primary.dark',
+                                                boxShadow: isBelow768 ? 'none' : '0 12px 20px rgba(12, 131, 31, 0.3)'
+                                            },
+                                            whiteSpace: 'nowrap',
+                                            '& .MuiButton-startIcon': {
+                                                margin: isBelow768 ? 0 : '0 8px 0 -4px',
+                                                mr: isBelow768 ? 0 : 1
+                                            }
+                                        }}
+                                    >
+                                        {!isBelow768 && 'My Cart'}
+                                    </Button>
+                                </motion.div>
 
                                 {/* Mobile Hamburger Menu Icon */}
                                 {isBelow425 && (
@@ -386,6 +431,16 @@ export default function MuiNavbar() {
                 user={user}
                 cartCount={cartCount}
                 onProductsClick={() => { router.push('/products'); setIsDrawerOpen(false); }}
+            />
+
+            <ConfirmDialog
+                open={isLogoutModalOpen}
+                onClose={() => setIsLogoutModalOpen(false)}
+                onConfirm={handleLogout}
+                title="Logout Confirmation"
+                message="Are you sure you want to log out of your account?"
+                confirmText="Logout"
+                type="danger"
             />
         </>
     );

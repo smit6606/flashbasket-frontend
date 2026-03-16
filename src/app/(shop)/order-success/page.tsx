@@ -11,6 +11,7 @@ import {
     Stack,
     Grid,
 } from '@mui/material';
+import { motion } from 'framer-motion';
 import {
     CheckCircleOutline as CheckIcon,
     ShoppingBasket as ShoppingBasketIcon,
@@ -32,54 +33,78 @@ export default function OrderSuccessPage() {
                     bgcolor: 'white',
                 }}
             >
-                <Box
-                    sx={{
-                        width: 100,
-                        height: 100,
-                        bgcolor: '#ecfdf5',
-                        color: '#10b981',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        mx: 'auto',
-                        mb: 4,
-                        boxShadow: '0 0 0 10px rgba(16, 185, 129, 0.1)',
-                    }}
+                <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.1 }}
                 >
-                    <CheckIcon sx={{ fontSize: 60 }} />
-                </Box>
+                    <Box
+                        sx={{
+                            width: 100,
+                            height: 100,
+                            bgcolor: '#ecfdf5',
+                            color: '#10b981',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            mx: 'auto',
+                            mb: 4,
+                            boxShadow: '0 0 0 10px rgba(16, 185, 129, 0.1)',
+                        }}
+                    >
+                        <CheckIcon sx={{ fontSize: 60 }} />
+                    </Box>
+                </motion.div>
                 
-                <Typography variant="h3" sx={{ fontWeight: 900, color: 'slate.900', mb: 2 }}>
-                    Order Placed Successfully!
-                </Typography>
-                
-                <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 600, mb: 6, px: { md: 6 } }}>
-                    Your lightning-fast delivery is being prepared. Our delivery partner will pick it up shortly!
-                </Typography>
-
-                <Paper elevation={0} sx={{ bgcolor: '#f8fafc', p: 4, borderRadius: '16px', mb: 6, textAlign: 'left' }}>
-                    <Typography variant="subtitle2" sx={{ color: 'text.secondary', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', mb: 2 }}>
-                        What happens next?
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                >
+                    <Typography variant="h3" sx={{ fontWeight: 900, color: 'slate.900', mb: 2 }}>
+                        Order Placed Successfully!
                     </Typography>
-                    <Stack spacing={3}>
-                        <Box sx={{ display: 'flex', gap: 2 }}>
-                            <ShoppingBasketIcon color="primary" />
-                            <Box>
-                                <Typography variant="body1" sx={{ fontWeight: 800, color: 'slate.900' }}>Order Processing</Typography>
-                                <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>The seller is packing your items securely.</Typography>
+                </motion.div>
+                
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                >
+                    <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 600, mb: 6, px: { md: 6 } }}>
+                        Your lightning-fast delivery is being prepared. Our delivery partner will pick it up shortly!
+                    </Typography>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.6 }}
+                >
+                    <Paper elevation={0} sx={{ bgcolor: '#f8fafc', p: 4, borderRadius: '16px', mb: 6, textAlign: 'left' }}>
+                        <Typography variant="subtitle2" sx={{ color: 'text.secondary', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', mb: 2 }}>
+                            What happens next?
+                        </Typography>
+                        <Stack spacing={3}>
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                                <ShoppingBasketIcon color="primary" />
+                                <Box>
+                                    <Typography variant="body1" sx={{ fontWeight: 800, color: 'slate.900' }}>Order Processing</Typography>
+                                    <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>The seller is packing your items securely.</Typography>
+                                </Box>
                             </Box>
-                        </Box>
-                        <Divider />
-                        <Box sx={{ display: 'flex', gap: 2 }}>
-                            <ReceiptIcon color="primary" />
-                            <Box>
-                                <Typography variant="body1" sx={{ fontWeight: 800, color: 'slate.900' }}>Out for Delivery</Typography>
-                                <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>Within 11 minutes, a driver will bring it right to your door.</Typography>
+                            <Divider />
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                                <ReceiptIcon color="primary" />
+                                <Box>
+                                    <Typography variant="body1" sx={{ fontWeight: 800, color: 'slate.900' }}>Out for Delivery</Typography>
+                                    <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>Within 11 minutes, a driver will bring it right to your door.</Typography>
+                                </Box>
                             </Box>
-                        </Box>
-                    </Stack>
-                </Paper>
+                        </Stack>
+                    </Paper>
+                </motion.div>
 
                 <Grid container spacing={3} justifyContent="center">
                     <Grid size={{ xs: 12, sm: 6 }}>

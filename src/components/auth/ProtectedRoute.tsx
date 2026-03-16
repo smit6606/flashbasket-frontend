@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Box, CircularProgress } from '@mui/material';
 
 interface ProtectedRouteProps {
@@ -12,12 +12,13 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
+  const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading) {
       if (!user) {
-        router.push('/login');
+        router.push(`/login?callbackUrl=${encodeURIComponent(pathname)}`);
       } else if (allowedRoles && !allowedRoles.includes(user.role)) {
         // Redirect to their own dashboard if they are in the wrong place
         if (user.role === 'admin') router.replace('/admin');

@@ -105,7 +105,7 @@ export default function AdminSellers() {
     return (
         <Box sx={{ p: 1 }}>
             <Box sx={{ mb: 6 }}>
-                <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>Manage Sellers</Typography>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>Sellers</Typography>
                 <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1 }}>Review store registrations and manage operational permissions.</Typography>
             </Box>
 

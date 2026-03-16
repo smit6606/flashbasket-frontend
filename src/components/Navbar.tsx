@@ -58,7 +58,16 @@ const Navbar = () => {
                 <div className="hidden lg:flex flex-col text-right cursor-pointer group">
                   <p className="text-sm font-bold text-slate-800 group-hover:text-[#0C831F] transition-colors">{user.user_name}</p>
                   <div className="flex items-center gap-3 justify-end text-xs font-semibold text-slate-500 mt-0.5">
-                    <Link href="/orders" className="hover:text-[#0C831F]">Orders</Link>
+                    {user.role === 'user' ? (
+                      <Link href="/orders" className="hover:text-[#0C831F]">Orders</Link>
+                    ) : (
+                      <Link 
+                        href={`/${user.role}`} 
+                        className="text-[#0C831F] font-bold hover:underline underline-offset-4"
+                      >
+                        Go to {user.role.charAt(0).toUpperCase() + user.role.slice(1)} Panel
+                      </Link>
+                    )}
                     <span>•</span>
                     <button onClick={logout} className="hover:text-red-500 transition-colors">Logout</button>
                   </div>

@@ -18,6 +18,7 @@ import Link from 'next/link';
 interface Category {
   id: number;
   name: string;
+  image?: string;
 }
 
 export default function CategoriesPage() {
@@ -39,32 +40,7 @@ export default function CategoriesPage() {
     fetchCategories();
   }, []);
 
-  const getCategoryImage = (name: string) => {
-    const lookupName = name.toLowerCase();
-    
-    const staticImages: { [key: string]: string } = {
-        'grocery': 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=300',
-        'beauty': 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=300',
-        'elect': 'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&q=80&w=300',
-        'home': 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&q=80&w=300',
-        'kitchen': 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&q=80&w=300',
-        'toy': 'https://images.unsplash.com/photo-1558060370-d644479cb6f7?auto=format&fit=crop&q=80&w=300',
-        'snack': 'https://images.unsplash.com/photo-1599490659223-23df624860b0?auto=format&fit=crop&q=80&w=300',
-        'dairy': 'https://images.unsplash.com/photo-1550583724-1277f3134183?auto=format&fit=crop&q=80&w=300',
-        'fruit': 'https://images.unsplash.com/photo-1610832958506-aa563384269d?auto=format&fit=crop&q=80&w=300',
-        'veg': 'https://images.unsplash.com/photo-1610832958506-aa563384269d?auto=format&fit=crop&q=80&w=300',
-        'bike': 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=300',
-        'car': 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=300',
-        'shoe': 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=300'
-    };
-
-    for (const key in staticImages) {
-        if (lookupName.includes(key)) return staticImages[key];
-    }
-    
-    // Fallback to dynamic image search
-    return `https://loremflickr.com/300/300/${encodeURIComponent(lookupName.split(' ')[0])}`;
-  };
+  // Using database images directly now
 
   return (
     <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 6 }}>
@@ -127,7 +103,7 @@ export default function CategoriesPage() {
                   >
                     <img 
                       className="cat-img"
-                      src={getCategoryImage(cat.name)} 
+                      src={cat.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=300'} 
                       alt={cat.name}
                       style={{ 
                         width: '85%', 

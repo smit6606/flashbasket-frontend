@@ -35,6 +35,7 @@ import {
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
 import debounce from 'lodash/debounce';
+import ConfirmDialog from '@/components/mui/ConfirmDialog';
 
 export default function SellerSubcategoriesPage() {
     // Data states
@@ -56,6 +57,11 @@ export default function SellerSubcategoriesPage() {
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [statusFilter, setStatusFilter] = useState('all');
     const [categoryFilter, setCategoryFilter] = useState('all');
+
+    // Confirm Dialog States
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [selectedSubId, setSelectedSubId] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // UI states
     const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
@@ -119,14 +125,24 @@ export default function SellerSubcategoriesPage() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm('Are you sure you want to delete this subcategory?')) return;
+    const handleDeleteClick = (id: number) => {
+        setSelectedSubId(id);
+        setConfirmOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!selectedSubId) return;
         try {
-            await api.delete(`/categories/subcategory/${id}`); // Assumes endpoint exists
+            setIsDeleting(true);
+            await api.delete(`/categories/subcategory/${selectedSubId}`);
             toast.success('Subcategory deleted');
+            setConfirmOpen(false);
             fetchSubcategories();
         } catch (err) {
             toast.error('Failed to delete subcategory');
+        } finally {
+            setIsDeleting(false);
+            setSelectedSubId(null);
         }
     };
 
@@ -415,7 +431,7 @@ export default function SellerSubcategoriesPage() {
                                         <IconButton 
                                             size="small" 
                                             color="error" 
-                                            onClick={() => handleDelete(sub.id)}
+                                            onClick={() => handleDeleteClick(sub.id)}
                                             sx={{ opacity: 0.3, '&:hover': { opacity: 1, bgcolor: alpha('#ef4444', 0.05) } }}
                                         >
                                             <DeleteIcon fontSize="small" />
@@ -455,6 +471,18 @@ export default function SellerSubcategoriesPage() {
                     </Paper>
                 </Grid>
             </Grid>
+
+            <ConfirmDialog
+                open={confirmOpen}
+                onClose={() => setConfirmOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Subcategory"
+                message="Are you sure you want to delete this subcategory? This action will remove it from all associated products."
+                confirmText="Yes, Delete Subcategory"
+                cancelText="No, Keep It"
+                type="danger"
+                loading={isDeleting}
+            />
         </Box>
     );
 }

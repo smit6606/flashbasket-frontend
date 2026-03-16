@@ -34,7 +34,9 @@ export default function AddProductPage() {
     const [formData, setFormData] = useState({
         productName: '',
         description: '',
-        price: '',
+        originalPrice: '',
+        discountPercent: '0',
+        price: '', // finalPrice
         stock: '',
         unit: 'kg',
         categoryId: '',
@@ -62,7 +64,20 @@ export default function AddProductPage() {
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData(prev => {
+            const newData = { ...prev, [name]: value };
+            
+            // Auto-calculate final price if originalPrice or discountPercent changes
+            if (name === 'originalPrice' || name === 'discountPercent') {
+                const op = parseFloat(name === 'originalPrice' ? value : prev.originalPrice) || 0;
+                const dp = parseFloat(name === 'discountPercent' ? value : prev.discountPercent) || 0;
+                const final = op - (op * dp / 100);
+                newData.price = final.toFixed(2);
+            }
+            
+            return newData;
+        });
     };
 
     const handleCategoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,7 +117,7 @@ export default function AddProductPage() {
 
             await api.post('/seller/products', submitData);
             toast.success('Product Added');
-            router.push('/seller/products');
+            router.push('/seller/catalog');
         } catch (err: any) {
             toast.error(err.message || 'Failed to add product');
         } finally {
@@ -133,6 +148,7 @@ export default function AddProductPage() {
                                         <TextField
                                             fullWidth
                                             required
+                                            id="product-name"
                                             label="Product Name"
                                             name="productName"
                                             value={formData.productName}
@@ -143,6 +159,7 @@ export default function AddProductPage() {
                                         <TextField
                                             fullWidth
                                             required
+                                            id="product-description"
                                             multiline
                                             rows={4}
                                             label="Description"
@@ -156,6 +173,7 @@ export default function AddProductPage() {
                                             fullWidth
                                             select
                                             required
+                                            id="product-category"
                                             label="Category"
                                             name="categoryId"
                                             value={formData.categoryId}
@@ -173,6 +191,7 @@ export default function AddProductPage() {
                                             fullWidth
                                             select
                                             required
+                                            id="product-subcategory"
                                             label="Subcategory"
                                             name="subCategoryId"
                                             value={formData.subCategoryId}
@@ -217,24 +236,54 @@ export default function AddProductPage() {
                             <CardContent sx={{ p: 0 }}>
                                 <Typography variant="h6" sx={{ fontWeight: 800, mb: 3 }}>Pricing & Inventory</Typography>
                                 <Grid container spacing={3}>
-                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                    <Grid size={{ xs: 12, sm: 4 }}>
                                         <TextField
                                             fullWidth
                                             required
+                                            id="product-original-price"
                                             type="number"
-                                            label="Price"
-                                            name="price"
-                                            value={formData.price}
+                                            label="Original Price"
+                                            name="originalPrice"
+                                            value={formData.originalPrice}
                                             onChange={handleChange}
                                             InputProps={{
                                                 startAdornment: <InputAdornment position="start">₹</InputAdornment>,
                                             }}
                                         />
                                     </Grid>
+                                    <Grid size={{ xs: 12, sm: 4 }}>
+                                        <TextField
+                                            fullWidth
+                                            required
+                                            id="product-discount"
+                                            type="number"
+                                            label="Discount (%)"
+                                            name="discountPercent"
+                                            value={formData.discountPercent}
+                                            onChange={handleChange}
+                                            InputProps={{
+                                                endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, sm: 4 }}>
+                                        <TextField
+                                            fullWidth
+                                            disabled
+                                            id="product-final-price"
+                                            label="Final Price"
+                                            value={formData.price}
+                                            InputProps={{
+                                                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                                            }}
+                                            helperText="Calculated automatically"
+                                        />
+                                    </Grid>
                                     <Grid size={{ xs: 12, sm: 6 }}>
                                         <TextField
                                             fullWidth
                                             required
+                                            id="product-stock"
                                             type="number"
                                             label="Stock Quantity"
                                             name="stock"

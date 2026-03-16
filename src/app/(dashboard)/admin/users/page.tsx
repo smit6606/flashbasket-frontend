@@ -36,6 +36,7 @@ import {
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import { formatPhoneForDisplay } from '@/lib/phoneUtils';
 
 export default function AdminUsers() {
     const [users, setUsers] = useState<any[]>([]);
@@ -259,7 +260,7 @@ export default function AdminUsers() {
                                     </TableCell>
                                     <TableCell>
                                         <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>{user.email || 'N/A'}</Typography>
-                                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block' }}>{user.phone || 'N/A'}</Typography>
+                                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block' }}>{formatPhoneForDisplay(user.phone)}</Typography>
                                     </TableCell>
                                     <TableCell>
                                         <Typography variant="body2" sx={{ 

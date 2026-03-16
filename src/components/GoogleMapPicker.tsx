@@ -4,6 +4,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, StandaloneSearchBox } from '@react-google-maps/api';
 import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
 import { MyLocation as LocateIcon } from '@mui/icons-material';
+import { motion } from 'framer-motion';
 
 const containerStyle = {
     width: '100%',
@@ -207,9 +208,14 @@ export default function GoogleMapPicker({ onLocationSelect }: GoogleMapPickerPro
             </Button>
             
             {/* Drivers Overlay */}
-            <Box sx={{ position: 'absolute', bottom: 20, left: 20, bgcolor: 'rgba(255,255,255,0.95)', px: 2, py: 1, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
+            <Box sx={{ position: 'absolute', bottom: 20, left: 20, bgcolor: 'rgba(255,255,255,0.95)', px: 2, py: 1.2, borderRadius: 2.5, boxShadow: '0 8px 16px rgba(0,0,0,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.5)' }}>
                 <Typography variant="caption" sx={{ fontWeight: 900, color: '#0C831F', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span style={{ fontSize: '10px' }}>🟢</span> 4 Drivers Nearby
+                    <motion.span 
+                        animate={{ opacity: [1, 0.4, 1] }} 
+                        transition={{ duration: 2, repeat: Infinity }}
+                        style={{ fontSize: '8px' }}
+                    >🟢</motion.span> 
+                    {Math.floor(Math.random() * (12 - 4 + 1) + 4)} Flash Drivers Nearby
                 </Typography>
             </Box>
         </Box>

@@ -52,6 +52,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
+  useEffect(() => {
+    const handleUnauthorized = (event: any) => {
+      setToken(null);
+      setUser(null);
+      const message = event.detail?.message || 'Session expired. Please login again.';
+      toast.error(message, { toastId: 'session-expired' });
+      router.push('/login');
+    };
+
+    window.addEventListener('unauthorized-redirect', handleUnauthorized);
+    return () => window.removeEventListener('unauthorized-redirect', handleUnauthorized);
+  }, [router]);
+
   const login = (data: { token: string; user: User }) => {
     setToken(data.token);
     setUser(data.user);

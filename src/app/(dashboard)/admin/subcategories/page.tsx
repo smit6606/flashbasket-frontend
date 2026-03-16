@@ -34,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import ConfirmDialog from '@/components/mui/ConfirmDialog';
 
 export default function AdminSubcategoriesPage() {
     // Data states
@@ -55,6 +56,11 @@ export default function AdminSubcategoriesPage() {
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [statusFilter, setStatusFilter] = useState('all');
     const [categoryFilter, setCategoryFilter] = useState('all');
+
+    // Confirm Dialog States
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [selectedSubId, setSelectedSubId] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // UI states
     const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
@@ -121,14 +127,24 @@ export default function AdminSubcategoriesPage() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm('Are you sure? This will delete the subcategory for all users.')) return;
+    const handleDeleteClick = (id: number) => {
+        setSelectedSubId(id);
+        setDeleteOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!selectedSubId) return;
         try {
-            await api.delete(`/categories/subcategory/${id}`);
+            setIsDeleting(true);
+            await api.delete(`/categories/subcategory/${selectedSubId}`);
             toast.success('Subcategory deleted');
+            setDeleteOpen(false);
             fetchSubcategories();
         } catch (err) {
             toast.error('Failed to delete subcategory');
+        } finally {
+            setIsDeleting(false);
+            setSelectedSubId(null);
         }
     };
 
@@ -404,7 +420,7 @@ export default function AdminSubcategoriesPage() {
                                             >
                                                 {sub.status === 'inactive' ? 'Activate' : 'Hide / Inactivate'}
                                             </Button>
-                                            <IconButton size="small" color="error" onClick={() => handleDelete(sub.id)} sx={{ opacity: 0.5, '&:hover': { opacity: 1, bgcolor: alpha('#ef4444', 0.05) } }}>
+                                            <IconButton size="small" color="error" onClick={() => handleDeleteClick(sub.id)} sx={{ opacity: 0.5, '&:hover': { opacity: 1, bgcolor: alpha('#ef4444', 0.05) } }}>
                                                 <DeleteIcon fontSize="small" />
                                             </IconButton>
                                         </Stack>
@@ -426,6 +442,18 @@ export default function AdminSubcategoriesPage() {
                     </Paper>
                 </Grid>
             </Grid>
+
+            <ConfirmDialog
+                open={deleteOpen}
+                onClose={() => setDeleteOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Subcategory"
+                message="Are you sure you want to permanently delete this subcategory? This will affect all sellers and products currently using this classification."
+                confirmText="Yes, Delete Permanently"
+                cancelText="No, Keep It"
+                type="danger"
+                loading={isDeleting}
+            />
         </Box>
     );
 }

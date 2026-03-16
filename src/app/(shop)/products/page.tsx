@@ -38,6 +38,7 @@ import { api } from '@/lib/api';
 import Link from 'next/link';
 import { toast } from 'react-toastify';
 import ProductCard from '@/components/mui/ProductCard';
+import { GridSkeleton } from '@/components/mui/SkeletonLoaders';
 
 interface Product {
     id: number;
@@ -52,6 +53,7 @@ interface Product {
 function SearchResults() {
     const searchParams = useSearchParams();
     const q = searchParams.get('search') || '';
+    const catParam = searchParams.get('category') || 'all';
     
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -59,11 +61,50 @@ function SearchResults() {
     
     // Filters State
     const [priceRange, setPriceRange] = useState<number[]>([0, 5000]);
-    const [selectedCategory, setSelectedCategory] = useState('all');
+    const [selectedCategory, setSelectedCategory] = useState(catParam);
     const [sortBy, setSortBy] = useState('newest');
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-    const FilterContent = () => (
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // Fetch products based on search query, category and sorting
+                const params: any = { search: q, limit: 100 };
+                if (selectedCategory !== 'all') {
+                    params.category = selectedCategory;
+                }
+                
+                // Add sorting parameters
+                if (sortBy === 'price-low') {
+                    params.sortBy = 'price';
+                    params.sortOrder = 'ASC';
+                } else if (sortBy === 'price-high') {
+                    params.sortBy = 'price';
+                    params.sortOrder = 'DESC';
+                } else {
+                    params.sortBy = 'id';
+                    params.sortOrder = 'DESC';
+                }
+                
+                const productsRes = await api.get('/products', params);
+                setProducts(productsRes.data.items || []);
+
+                // Fetch categories for filter
+                const categoriesRes = await api.get('/categories');
+                setCategories(categoriesRes.data.items || []);
+            } catch (err) {
+                console.error('Failed to fetch product data', err);
+                toast.error('Could not load products');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [q, selectedCategory, sortBy]);
+
+    const filterContent = (
         <Stack spacing={4}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="h6" sx={{ fontWeight: 900, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -145,13 +186,12 @@ function SearchResults() {
     );
 
     const filteredProducts = products.filter(p => {
-        const matchesPrice = p.price >= priceRange[0] && p.price <= priceRange[1];
+        const price = Number(p.price);
+        const matchesPrice = price >= priceRange[0] && price <= priceRange[1];
+        // Note: Category check is already handled server-side, 
+        // but we keep this as a safe client-side backup
         const matchesCategory = selectedCategory === 'all' || p.Category?.name === selectedCategory;
         return matchesPrice && matchesCategory;
-    }).sort((a, b) => {
-        if (sortBy === 'price-low') return a.price - b.price;
-        if (sortBy === 'price-high') return b.price - a.price;
-        return 0; // newest
     });
 
     return (
@@ -160,7 +200,7 @@ function SearchResults() {
                 {/* Desktop Filters Sidebar */}
                 <Grid size={{ xs: 0, md: 3 }} sx={{ display: { xs: 'none', md: 'block' } }}>
                     <Paper elevation={0} sx={{ p: 4, borderRadius: '24px', border: '1px solid #f1f5f9', position: 'sticky', top: 100 }}>
-                        <FilterContent />
+                        {filterContent}
                     </Paper>
                 </Grid>
 
@@ -173,7 +213,7 @@ function SearchResults() {
                         sx: { width: 300, p: 3, borderRadius: '0 24px 24px 0' }
                     }}
                 >
-                    <FilterContent />
+                    {filterContent}
                 </Drawer>
 
                 {/* Results List */}
@@ -201,11 +241,7 @@ function SearchResults() {
 
                     <Grid container spacing={3}>
                         {loading ? (
-                            [...Array(6)].map((_, i) => (
-                                <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={i}>
-                                    <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 6 }} />
-                                </Grid>
-                            ))
+                            <GridSkeleton count={12} type="product" />
                         ) : filteredProducts.length === 0 ? (
                             <Grid size={{ xs: 12 }}>
                                 <Paper elevation={0} sx={{ py: 15, textAlign: 'center', bgcolor: '#f8fafc', borderRadius: '32px', border: '2px dashed #e2e8f0' }}>

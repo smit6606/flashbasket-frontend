@@ -32,6 +32,7 @@ import {
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { toast } from 'react-toastify';
+import ConfirmDialog from '@/components/mui/ConfirmDialog';
 
 export default function SellerCategoriesPage() {
     const [categories, setCategories] = useState<any[]>([]);
@@ -40,6 +41,11 @@ export default function SellerCategoriesPage() {
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Confirm Dialog States
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [categoryToDelete, setCategoryToDelete] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     
     // Pagination & Filter States
     const [page, setPage] = useState(0);
@@ -94,14 +100,24 @@ export default function SellerCategoriesPage() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm('Are you sure? This will delete all subcategories and products in this category.')) return;
+    const handleDeleteClick = (id: number) => {
+        setCategoryToDelete(id);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!categoryToDelete) return;
         try {
-            await api.delete(`/categories/${id}`);
+            setIsDeleting(true);
+            await api.delete(`/categories/${categoryToDelete}`);
             toast.success('Category deleted');
+            setDeleteDialogOpen(false);
             fetchCategories();
         } catch (err) {
             toast.error('Failed to delete category');
+        } finally {
+            setIsDeleting(false);
+            setCategoryToDelete(null);
         }
     };
 
@@ -317,7 +333,7 @@ export default function SellerCategoriesPage() {
                                             <IconButton 
                                                 size="small" 
                                                 color="error" 
-                                                onClick={() => handleDelete(cat.id)}
+                                                onClick={() => handleDeleteClick(cat.id)}
                                                 sx={{ opacity: 0.3, '&:hover': { opacity: 1, bgcolor: alpha('#ef4444', 0.05) } }}
                                             >
                                                 <DeleteIcon fontSize="small" />
@@ -359,6 +375,18 @@ export default function SellerCategoriesPage() {
                     </Paper>
                 </Grid>
             </Grid>
+
+            <ConfirmDialog
+                open={deleteDialogOpen}
+                onClose={() => setDeleteDialogOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Category"
+                message="Are you sure you want to delete this category? This will also remove all associated subcategories and products. This action cannot be undone."
+                confirmText="Yes, Delete Everything"
+                cancelText="No, Keep It"
+                type="danger"
+                loading={isDeleting}
+            />
         </Box>
     );
 }

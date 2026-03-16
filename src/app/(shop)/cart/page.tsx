@@ -11,7 +11,9 @@ import {
   CircularProgress,
   Paper,
   alpha,
+  Skeleton,
 } from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingCartOutlined as CartIcon,
   ArrowBack as BackIcon,
@@ -24,6 +26,8 @@ import MuiCartItem from '@/components/mui/MuiCartItem';
 import MuiCartSummary from '@/components/mui/MuiCartSummary';
 import { toast } from 'react-toastify';
 import { useCart } from '@/context/CartContext';
+import { GridSkeleton } from '@/components/mui/SkeletonLoaders';
+import LoadingButton from '@/components/mui/LoadingButton';
 
 interface CartItemType {
   id: number;
@@ -40,16 +44,25 @@ interface CartItemType {
 }
 
 export default function CartPage() {
-  const { user, token } = useAuth();
+  const { user, token, loading: authLoading } = useAuth();
   const { cartItems, refreshCart, updateQuantity, removeFromCart } = useCart();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [cartData, setCartData] = useState<{ items: any[]; subtotal: string } | null>(null);
+  const [cartLoading, setCartLoading] = useState(true);
+  const [cartData, setCartData] = useState<{ 
+    items: any[]; 
+    itemTotal: string;
+    handlingFee: string;
+    deliveryFee: string;
+    totalAmount: string;
+    totalSavings: string;
+    promoDiscount?: string;
+  } | null>(null);
 
   useEffect(() => {
+    if (authLoading) return; // Wait for hydration!
+
     if (!token) {
-        toast.info('Please login to access your cart', { toastId: 'cart-login-toast' });
-        setLoading(false);
+        setCartLoading(false);
         return;
     }
 
@@ -60,11 +73,11 @@ export default function CartPage() {
       } catch (err) {
         console.error('Failed to fetch cart', err);
       } finally {
-        setLoading(false);
+        setCartLoading(false);
       }
     };
     fetchCart();
-  }, [token]);
+  }, [token, authLoading]);
 
   const handleUpdateQuantity = async (cartItemId: number, productId: number, newQuantity: number) => {
     try {
@@ -95,10 +108,18 @@ export default function CartPage() {
     router.push('/checkout');
   };
 
-  if (loading) return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-      <CircularProgress />
-    </Box>
+  if (authLoading || cartLoading) return (
+    <Container maxWidth="lg" sx={{ py: 6 }}>
+        <Skeleton variant="text" width={300} height={60} sx={{ mb: 4 }} />
+        <Grid container spacing={8}>
+            <Grid size={{ xs: 12, md: 7.5 }}>
+                <GridSkeleton count={2} type="order" />
+            </Grid>
+            <Grid size={{ xs: 12, md: 4.5 }}>
+                <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 4 }} />
+            </Grid>
+        </Grid>
+    </Container>
   );
 
   // Requirement: If not logged in, show Login Access Section
@@ -131,11 +152,11 @@ export default function CartPage() {
           <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mb: 6, lineHeight: 1.6 }}>
             Please login to view and manage your cart items. We'll keep your fresh picks safe!
           </Typography>
-          <Button
+          <LoadingButton
             variant="contained"
             size="large"
             fullWidth
-            onClick={() => router.push('/login')}
+            onClick={() => router.push('/login?callbackUrl=/cart')}
             sx={{ 
                 py: 2, 
                 borderRadius: '16px', 
@@ -145,13 +166,13 @@ export default function CartPage() {
             }}
           >
             Login to Continue
-          </Button>
+          </LoadingButton>
           <Button
             variant="text"
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/products')}
             sx={{ mt: 3, fontWeight: 800, color: 'text.secondary', textTransform: 'none' }}
           >
-            Continue as Guest
+            Continue Shopping
           </Button>
         </Paper>
       </Container>
@@ -174,7 +195,7 @@ export default function CartPage() {
           <Button
             variant="contained"
             size="large"
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/products')}
             startIcon={<BagIcon />}
             sx={{ px: 6, py: 1.5, borderRadius: 1.5, fontWeight: 900 }}
           >
@@ -198,19 +219,21 @@ export default function CartPage() {
         {/* Cart Items */}
         <Grid size={{ xs: 12, md: 7.5 }}>
           <Stack spacing={3}>
-            {cartData.items.map((item) => (
-              <MuiCartItem
-                key={item.id}
-                item={item}
-                onUpdateQuantity={(id, qty) => handleUpdateQuantity(id, item.productId, qty)}
-                onRemove={(id) => handleRemoveItem(id, item.productId)}
-              />
-            ))}
+            <AnimatePresence mode="popLayout">
+              {cartData.items.map((item: any) => (
+                <MuiCartItem
+                  key={item.id}
+                  item={item}
+                  onUpdateQuantity={(id: number, qty: number) => handleUpdateQuantity(id, item.productId, qty)}
+                  onRemove={(id: number) => handleRemoveItem(id, item.productId)}
+                />
+              ))}
+            </AnimatePresence>
           </Stack>
 
           <Button
             startIcon={<BackIcon />}
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/products')}
             sx={{ mt: 5, fontWeight: 800, color: 'text.secondary' }}
           >
             Continue Shopping
@@ -219,10 +242,21 @@ export default function CartPage() {
 
         {/* Summary */}
         <Grid size={{ xs: 12, md: 4.5 }}>
-          <MuiCartSummary
-            subtotal={cartData.subtotal}
-            onCheckout={handleCheckout}
-          />
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <MuiCartSummary
+              itemTotal={cartData.itemTotal}
+              handlingFee={cartData.handlingFee}
+              deliveryFee={cartData.deliveryFee}
+              totalAmount={cartData.totalAmount}
+              totalSavings={cartData.totalSavings}
+              promoDiscount={cartData.promoDiscount}
+              onCheckout={handleCheckout}
+            />
+          </motion.div>
         </Grid>
       </Grid>
     </Container>
