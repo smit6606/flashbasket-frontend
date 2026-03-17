@@ -151,8 +151,8 @@ export default function AdminCategories() {
     return (
         <Box sx={{ p: 1, maxWidth: 1200, mx: 'auto' }}>
             <Box sx={{ mb: 6 }}>
-                <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>Global Categories</Typography>
-                <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1 }}>Define the primary collections for the entire marketplace.</Typography>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>Categories</Typography>
+                <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1 }}>Define and manage the primary collections for the marketplace.</Typography>
             </Box>
 
             <Grid container spacing={4}>

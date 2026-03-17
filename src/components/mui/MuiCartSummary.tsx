@@ -24,6 +24,7 @@ interface MuiCartSummaryProps {
     totalSavings: string;
     promoDiscount?: string;
     onCheckout: () => void;
+    disabled?: boolean;
 }
 
 export default function MuiCartSummary({ 
@@ -33,7 +34,8 @@ export default function MuiCartSummary({
     totalAmount, 
     totalSavings, 
     promoDiscount = '0.00',
-    onCheckout 
+    onCheckout,
+    disabled = false
 }: MuiCartSummaryProps) {
     const savingsNum = parseFloat(totalSavings);
     const promoNum = parseFloat(promoDiscount);
@@ -114,6 +116,7 @@ export default function MuiCartSummary({
                     fullWidth
                     variant="contained"
                     onClick={onCheckout}
+                    disabled={disabled}
                     size="large"
                     endIcon={<ArrowIcon />}
                     sx={{
@@ -123,13 +126,13 @@ export default function MuiCartSummary({
                         fontSize: '1rem',
                         justifyContent: 'space-between',
                         px: 4,
-                        bgcolor: '#0C831F',
+                        bgcolor: disabled ? 'grey.300' : '#0C831F',
                         transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                        boxShadow: '0 8px 24px rgba(12, 131, 31, 0.2)',
+                        boxShadow: disabled ? 'none' : '0 8px 24px rgba(12, 131, 31, 0.2)',
                         '&:hover': {
-                            bgcolor: '#096e1a',
-                            transform: 'translateY(-2px)',
-                            boxShadow: '0 12px 30px rgba(12, 131, 31, 0.3)',
+                            bgcolor: disabled ? 'grey.300' : '#096e1a',
+                            transform: disabled ? 'none' : 'translateY(-2px)',
+                            boxShadow: disabled ? 'none' : '0 12px 30px rgba(12, 131, 31, 0.3)',
                         }
                     }}
                 >

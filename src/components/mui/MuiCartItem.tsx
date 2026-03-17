@@ -36,6 +36,7 @@ interface MuiCartItemProps {
             productName: string;
             images: string[];
         } | null;
+        isAvailable?: boolean;
     };
     onUpdateQuantity: (cartItemId: number, newQuantity: number) => void;
     onRemove: (cartItemId: number) => void;
@@ -60,8 +61,11 @@ export default function MuiCartItem({ item, onUpdateQuantity, onRemove }: MuiCar
                     gap: { xs: 2, sm: 3 },
                     alignItems: { xs: 'flex-start', sm: 'center' },
                     flexDirection: { xs: 'row', sm: 'row' },
-                    '&:hover': { bgcolor: '#f8fafc', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' },
+                    bgcolor: item.isAvailable === false ? alpha('#f1f5f9', 0.5) : '#fff',
+                    '&:hover': { bgcolor: item.isAvailable === false ? alpha('#f1f5f9', 0.5) : '#f8fafc', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' },
                     transition: 'all 0.2s',
+                    opacity: item.isAvailable === false ? 0.7 : 1,
+                    filter: item.isAvailable === false ? 'grayscale(0.5)' : 'none',
                 }}
             >
             <Box
@@ -86,18 +90,25 @@ export default function MuiCartItem({ item, onUpdateQuantity, onRemove }: MuiCar
             </Box>
 
             <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                <Typography
-                    variant="caption"
-                    sx={{
-                        fontWeight: 800,
-                        color: 'text.secondary',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        fontSize: { xs: '0.6rem', sm: '0.65rem' }
-                    }}
-                >
-                    {item.Seller?.shop_name || 'Generic Seller'}
-                </Typography>
+                <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            fontWeight: 800,
+                            color: 'text.secondary',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            fontSize: { xs: '0.6rem', sm: '0.65rem' }
+                        }}
+                    >
+                        {item.Seller?.shop_name || 'Generic Seller'}
+                    </Typography>
+                    {item.isAvailable === false && (
+                        <Box sx={{ px: 1, py: 0.2, bgcolor: 'error.main', borderRadius: 1 }}>
+                            <Typography variant="caption" sx={{ color: 'white', fontWeight: 900, fontSize: '0.6rem' }}>OUT OF SERVICE</Typography>
+                        </Box>
+                    )}
+                </Stack>
                 <Typography
                     variant="subtitle1"
                     sx={{
@@ -138,10 +149,10 @@ export default function MuiCartItem({ item, onUpdateQuantity, onRemove }: MuiCar
                             sx={{ 
                                 display: 'flex', 
                                 alignItems: 'center', 
-                                bgcolor: 'primary.main', 
+                                bgcolor: item.isAvailable === false ? 'grey.300' : 'primary.main', 
                                 borderRadius: 1.5,
                                 overflow: 'hidden',
-                                boxShadow: '0 4px 12px rgba(12, 131, 31, 0.15)'
+                                boxShadow: item.isAvailable === false ? 'none' : '0 4px 12px rgba(12, 131, 31, 0.15)'
                             }}
                         >
                             {item.quantity > 1 ? (

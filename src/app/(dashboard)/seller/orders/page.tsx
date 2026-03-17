@@ -74,6 +74,7 @@ export default function SellerOrdersPage() {
     const [totalItems, setTotalItems] = useState(0);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [sellerStatus, setSellerStatus] = useState<string>('Active');
 
     const fetchOrders = async () => {
         try {
@@ -86,6 +87,9 @@ export default function SellerOrdersPage() {
                 sortBy: 'createdAt',
                 sortOrder: 'desc'
             });
+
+            const dashboardRes = await api.get('/seller/dashboard');
+            setSellerStatus(dashboardRes.data.stats?.sellerStatus || 'Active');
 
             const response = await api.get(`/orders/seller?${params.toString()}`);
             setOrders(response.data.items || []);
@@ -108,6 +112,10 @@ export default function SellerOrdersPage() {
     }, [page, rowsPerPage, statusFilter, searchQuery]);
 
     const updateStatus = async (id: number, status: string) => {
+        if (sellerStatus === 'Suspended') {
+            toast.error('Actions disabled while account is suspended');
+            return;
+        }
         try {
             await api.patch(`/orders/${id}/status`, { status });
             toast.success(`Order status updated to ${status.replace(/-/g, ' ')}`);
@@ -124,17 +132,17 @@ export default function SellerOrdersPage() {
 
     const getStatusConfig = (status: string) => {
         const configs: any = {
-            'pending': { color: '#ff9800', label: 'Pending', step: 1 },
-            'preparing': { color: '#9c27b0', label: 'Processing', step: 2 },
-            'awaiting-assignment': { color: '#ff5722', label: 'Processing', step: 3 },
-            'accepted-by-partner': { color: '#0C831F', label: 'Processing', step: 4 },
-            'assigned': { color: '#2196f3', label: 'Processing', step: 5 },
-            'ready-to-ship': { color: '#2196f3', label: 'Processing', step: 6 },
-            'shipped': { color: '#03a9f4', label: 'Shipped', step: 7 },
-            'out-for-delivery': { color: '#03a9f4', label: 'Out for Delivery', step: 8 },
-            'delivered': { color: '#0C831F', label: 'Completed', step: 9 },
-            'completed': { color: '#0C831F', label: 'Completed', step: 9 },
-            'cancelled': { color: '#ef5350', label: 'Cancelled', step: 0 }
+            'Pending': { color: '#ff9800', label: 'Pending', step: 1 },
+            'Preparing': { color: '#9c27b0', label: 'Processing', step: 2 },
+            'Awaiting-Assignment': { color: '#ff5722', label: 'Processing', step: 3 },
+            'Accepted-By-Partner': { color: '#0C831F', label: 'Processing', step: 4 },
+            'Assigned': { color: '#2196f3', label: 'Processing', step: 5 },
+            'Ready-to-Ship': { color: '#2196f3', label: 'Processing', step: 6 },
+            'Shipped': { color: '#03a9f4', label: 'Shipped', step: 7 },
+            'Out-for-Delivery': { color: '#03a9f4', label: 'Out for Delivery', step: 8 },
+            'Delivered': { color: '#0C831F', label: 'Delivered', step: 9 },
+            'Completed': { color: '#0C831F', label: 'Completed', step: 9 },
+            'Cancelled': { color: '#ef5350', label: 'Cancelled', step: 0 }
         };
         return configs[status] || { color: '#747d8c', label: status.charAt(0).toUpperCase() + status.slice(1).replace(/-/g, ' '), step: 0 };
     };
@@ -172,11 +180,12 @@ export default function SellerOrdersPage() {
                         sx={{ borderRadius: '16px', bgcolor: 'white', fontWeight: 700 }}
                     >
                         <MenuItem value="all" sx={{ fontWeight: 600 }}>All Orders</MenuItem>
-                        <MenuItem value="pending" sx={{ fontWeight: 600 }}>Pending</MenuItem>
-                        <MenuItem value="preparing" sx={{ fontWeight: 600 }}>Processing</MenuItem>
-                        <MenuItem value="shipped" sx={{ fontWeight: 600 }}>Shipped</MenuItem>
-                        <MenuItem value="completed" sx={{ fontWeight: 600 }}>Delivered</MenuItem>
-                        <MenuItem value="cancelled" sx={{ fontWeight: 600 }}>Cancelled</MenuItem>
+                        <MenuItem value="Pending" sx={{ fontWeight: 600 }}>Pending</MenuItem>
+                        <MenuItem value="Preparing" sx={{ fontWeight: 600 }}>Processing</MenuItem>
+                        <MenuItem value="Shipped" sx={{ fontWeight: 600 }}>Shipped</MenuItem>
+                        <MenuItem value="Delivered" sx={{ fontWeight: 600 }}>Delivered</MenuItem>
+                        <MenuItem value="Completed" sx={{ fontWeight: 600 }}>Completed</MenuItem>
+                        <MenuItem value="Cancelled" sx={{ fontWeight: 600 }}>Cancelled</MenuItem>
                     </Select>
                 </FormControl>
             </Stack>
@@ -220,34 +229,37 @@ export default function SellerOrdersPage() {
                                             />
                                             
                                             {/* SELLER ACTION BUTTONS */}
-                                            {order.status === 'pending' && (
+                                            {order.status === 'Pending' && (
                                                 <Button 
                                                     variant="contained" 
                                                     color="primary" 
                                                     startIcon={<StartIcon />}
-                                                    onClick={() => updateStatus(order.id, 'preparing')}
+                                                    onClick={() => updateStatus(order.id, 'Preparing')}
+                                                    disabled={sellerStatus === 'Suspended'}
                                                     sx={{ fontWeight: 900, borderRadius: '14px', px: 3 }}
                                                 >
                                                     Start Preparing
                                                 </Button>
                                             )}
-                                            {order.status === 'preparing' && (
+                                            {order.status === 'Preparing' && (
                                                 <Button 
                                                     variant="contained" 
                                                     color="warning" 
                                                     startIcon={<AdminIcon />}
-                                                    onClick={() => updateStatus(order.id, 'awaiting-assignment')}
+                                                    onClick={() => updateStatus(order.id, 'Awaiting-Assignment')}
+                                                    disabled={sellerStatus === 'Suspended'}
                                                     sx={{ fontWeight: 900, borderRadius: '14px', px: 3 }}
                                                 >
                                                     Ready for Delivery
                                                 </Button>
                                             )}
-                                            {order.status === 'ready-to-ship' && (
+                                            {order.status === 'Ready-to-Ship' && (
                                                 <Button 
                                                     variant="contained" 
                                                     color="info" 
                                                     startIcon={<ShippingIcon />}
-                                                    onClick={() => updateStatus(order.id, 'shipped')}
+                                                    onClick={() => updateStatus(order.id, 'Shipped')}
+                                                    disabled={sellerStatus === 'Suspended'}
                                                     sx={{ fontWeight: 900, borderRadius: '14px', px: 3 }}
                                                 >
                                                     Start Shipping
@@ -255,21 +267,22 @@ export default function SellerOrdersPage() {
                                             )}
 
                                             {/* Completed / Other States */}
-                                            {['delivered', 'completed'].includes(order.status) && (
+                                            {['Delivered', 'Completed'].includes(order.status) && (
                                                 <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 900, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    <DoneIcon fontSize="small" /> COMPLETED
+                                                    <DoneIcon fontSize="small" /> SUCCESSFUL
                                                 </Typography>
                                             )}
-                                            {order.status === 'cancelled' && (
+                                            {order.status === 'Cancelled' && (
                                                 <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 900, display: 'flex', alignItems: 'center', gap: 1 }}>
                                                     <CancelIcon fontSize="small" /> CANCELLED
                                                 </Typography>
                                             )}
-                                            {order.status === 'pending' && (
+                                            {order.status === 'Pending' && (
                                                 <Button 
                                                     variant="outlined" 
                                                     color="error" 
-                                                    onClick={() => updateStatus(order.id, 'cancelled')}
+                                                    onClick={() => updateStatus(order.id, 'Cancelled')}
+                                                    disabled={sellerStatus === 'Suspended'}
                                                     sx={{ fontWeight: 900, borderRadius: '14px', border: 2 }}
                                                 >
                                                     Cancel

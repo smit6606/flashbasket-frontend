@@ -128,9 +128,9 @@ export default function AdminUsers() {
     return (
         <Box sx={{ p: 1 }}>
             <Box sx={{ mb: 6 }}>
-                <Typography variant="h3" sx={{ fontWeight: 900, letterSpacing: '-0.02em', color: '#1e293b' }}>Global Platform Users</Typography>
+                <Typography variant="h3" sx={{ fontWeight: 900, letterSpacing: '-0.02em', color: '#1e293b' }}>Users</Typography>
                 <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1 }}>
-                    Unified control center to manage all Customers, Sellers, Delivery Partners, and Admins.
+                    Manage all Customers, Sellers, Drivers, and Admins across the platform.
                 </Typography>
             </Box>
 

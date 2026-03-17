@@ -68,17 +68,17 @@ export default function OrdersPage() {
     const [cancelling, setCancelling] = useState(false);
 
     const steps = [
-        { label: 'Placed', status: ['pending'] },
-        { label: 'Preparing', status: ['preparing'] },
-        { label: 'Logistics', status: ['awaiting-assignment', 'assigned', 'accepted-by-partner', 'ready-to-ship'] },
-        { label: 'Shipped', status: ['shipped'] },
-        { label: 'In Transit', status: ['out-for-delivery'] },
-        { label: 'Arrived', status: ['arrived'] },
-        { label: 'Completed', status: ['delivered', 'completed'] }
+        { label: 'Placed', status: ['Pending'] },
+        { label: 'Preparing', status: ['Preparing'] },
+        { label: 'Logistics', status: ['Awaiting-Assignment', 'Assigned', 'Accepted-By-Partner', 'Ready-to-Ship'] },
+        { label: 'Shipped', status: ['Shipped'] },
+        { label: 'In Transit', status: ['Out-for-Delivery'] },
+        { label: 'Arrived', status: ['Arrived'] },
+        { label: 'Completed', status: ['Delivered', 'Completed'] }
     ];
 
     const getActiveStep = (status: string) => {
-        if (status === 'cancelled') return -1;
+        if (status === 'Cancelled') return -1;
         const index = steps.findIndex(s => s.status.includes(status));
         if (index !== -1) return index;
         return 0;
@@ -124,7 +124,7 @@ export default function OrdersPage() {
         if (!selectedOrderId) return;
         setCancelling(true);
         try {
-            await api.patch(`/orders/${selectedOrderId}/status`, { status: 'cancelled' });
+            await api.patch(`/orders/${selectedOrderId}/status`, { status: 'Cancelled' });
             const response = await api.get('/orders/user');
             setOrders(response.data);
             toast.success('Order cancelled successfully');
@@ -176,8 +176,8 @@ export default function OrdersPage() {
                 <Stack spacing={6}>
                     {orders.map((order) => {
                         const activeStep = getActiveStep(order.status);
-                        const isCancelled = order.status === 'cancelled';
-                        const isCompleted = order.status === 'completed' || order.status === 'delivered';
+                        const isCancelled = order.status === 'Cancelled';
+                        const isCompleted = order.status === 'Completed' || order.status === 'Delivered';
 
                         return (
                             <Card key={order.id} elevation={0} sx={{ borderRadius: 8, border: '1px solid #f1f5f9', overflow: 'hidden', transition: 'all 0.3s', '&:hover': { boxShadow: '0 20px 60px rgba(0,0,0,0.04)' } }}>
@@ -277,7 +277,7 @@ export default function OrdersPage() {
                                                         : (order.deliveryAddress as any)?.address || JSON.stringify(order.deliveryAddress)}
                                                 </Typography>
                                                 
-                                                {order.status === 'arrived' && order.deliveryOtp && (
+                                                {order.status === 'Arrived' && order.deliveryOtp && (
                                                     <Box sx={{ p: 2, bgcolor: 'white', borderRadius: 3, textAlign: 'center', border: '1px solid #e2e8f0', mt: 2 }}>
                                                         <Typography variant="caption" sx={{ fontWeight: 900, color: 'text.secondary' }}>DELIVERY OTP</Typography>
                                                         <Typography variant="h5" sx={{ fontWeight: 900, color: '#0C831F', letterSpacing: '0.2em' }}>{order.deliveryOtp}</Typography>
@@ -325,7 +325,7 @@ export default function OrdersPage() {
                                             Invoice
                                         </Button>
                                         
-                                        {!isCompleted && !isCancelled && (order.status === 'pending' || order.status === 'preparing') && (
+                                        {!isCompleted && !isCancelled && (order.status === 'Pending' || order.status === 'Preparing') && (
                                             <Button 
                                                 variant="text" 
                                                 color="error" 

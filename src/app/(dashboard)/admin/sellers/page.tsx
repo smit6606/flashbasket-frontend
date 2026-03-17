@@ -61,7 +61,7 @@ export default function AdminSellers() {
                 search: searchQuery,
                 sortBy: sortBy,
                 sortOrder: sortOrder,
-                status: statusFilter === 'all' ? '' : statusFilter,
+                status: statusFilter === 'all' ? '' : (statusFilter === 'active' ? 'Active' : (statusFilter === 'suspended' ? 'Suspended' : statusFilter)),
             });
 
             const response = await api.get(`/admin/sellers?${params.toString()}`);
@@ -217,36 +217,36 @@ export default function AdminSellers() {
                                 </TableCell>
                                 <TableCell>
                                     <Chip 
-                                        label={seller.status ? seller.status.toUpperCase() : (seller.isActive ? 'ACTIVE' : 'INACTIVE')} 
+                                        label={seller.status ? seller.status.toUpperCase() : 'ACTIVE'} 
                                         size="small" 
                                         sx={{ 
                                             fontWeight: 900, 
                                             borderRadius: 2,
                                             fontSize: '0.65rem',
-                                            bgcolor: (seller.status || (seller.isActive ? 'active' : 'inactive')) === 'active' ? alpha('#0C831F', 0.1) : (seller.status === 'suspended' ? alpha('#ef4444', 0.1) : alpha('#f59e0b', 0.1)),
-                                            color: (seller.status || (seller.isActive ? 'active' : 'inactive')) === 'active' ? '#0C831F' : (seller.status === 'suspended' ? '#ef4444' : '#f59e0b'),
+                                            bgcolor: (seller.status || 'Active') === 'Active' ? alpha('#0C831F', 0.1) : (seller.status === 'Suspended' ? alpha('#ef4444', 0.1) : alpha('#f59e0b', 0.1)),
+                                            color: (seller.status || 'Active') === 'Active' ? '#0C831F' : (seller.status === 'Suspended' ? '#ef4444' : '#f59e0b'),
                                         }}
                                     />
                                 </TableCell>
                                 <TableCell align="right">
                                     <Stack direction="row" spacing={1} justifyContent="flex-end">
-                                        {(seller.status || (seller.isActive ? 'active' : 'inactive')) !== 'active' && (
+                                        {(seller.status || 'Active') !== 'Active' && (
                                             <Button 
                                                 variant="contained" 
                                                 color="success" 
                                                 size="small"
-                                                onClick={() => handleStatusUpdate(seller.id, 'active')} 
+                                                onClick={() => handleStatusUpdate(seller.id, 'Active')} 
                                                 sx={{ px: 2, borderRadius: 2, fontWeight: 900, fontSize: '0.7rem' }}
                                             >
                                                 Approve
                                             </Button>
                                         )}
-                                        {(seller.status || (seller.isActive ? 'active' : 'suspended')) !== 'suspended' && (
+                                        {(seller.status || 'Active') !== 'Suspended' && (
                                             <Button 
                                                 variant="outlined" 
                                                 color="error" 
                                                 size="small"
-                                                onClick={() => handleStatusUpdate(seller.id, 'suspended')} 
+                                                onClick={() => handleStatusUpdate(seller.id, 'Suspended')} 
                                                 sx={{ px: 2, borderRadius: 2, fontWeight: 900, fontSize: '0.7rem', borderWidth: 2, '&:hover': { borderWidth: 2 } }}
                                             >
                                                 Suspend

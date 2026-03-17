@@ -9,17 +9,19 @@ NProgress.configure({
 });
 
 const getApiUrl = () => {
-    if (typeof window === 'undefined') return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     
-    const hostname = window.location.hostname;
-    
-    if (hostname.includes('devtunnels.ms')) {
-        // If we're on a dev tunnel like xxxx-3000.inc1.devtunnels.ms
-        // The backend is likely at xxxx-5000.inc1.devtunnels.ms
-        return `https://${hostname.replace('-3000', '-5000')}/api`;
+    if (apiUrl) return apiUrl;
+
+    if (typeof window !== 'undefined') {
+        const hostname = window.location.hostname;
+        if (hostname.includes('devtunnels.ms')) {
+            // Auto-detect backend API URL for dev tunnels if env is missing
+            return `https://${hostname.replace('-3000', '-5000')}/api`;
+        }
     }
-    
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+    return 'http://localhost:5000/api';
 };
 
 const API_URL = getApiUrl();

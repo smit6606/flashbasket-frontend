@@ -28,6 +28,8 @@ import {
     AccountBalanceWallet as EarningsIcon,
     History as HistoryIcon,
     LocalShipping as ActiveIcon,
+    Person as PersonIcon,
+    NotificationsActive as AlertIcon,
 } from '@mui/icons-material';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -47,45 +49,34 @@ export default function MuiSidebar({ mobileOpen, onClose }: SidebarProps) {
 
     const menuItems = {
         admin: [
-            { name: 'Public Home', path: '/', icon: <HomeIcon /> },
             { name: 'Dashboard', path: '/admin', icon: <DashboardIcon /> },
             { name: 'Orders', path: '/admin/orders', icon: <OrdersIcon /> },
             { name: 'Users', path: '/admin/users', icon: <PeopleIcon /> },
             { name: 'Sellers', path: '/admin/sellers', icon: <StoreIcon /> },
-            { name: 'Delivery Drivers', path: '/admin/delivery', icon: <ActiveIcon /> },
+            { name: 'Drivers', path: '/admin/delivery', icon: <ActiveIcon /> },
             { name: 'Categories', path: '/admin/categories', icon: <CategoryIcon /> },
             { name: 'Products', path: '/admin/products', icon: <InventoryIcon /> },
+            { name: 'Completed Orders', path: '/admin/orders/completed', icon: <HistoryIcon /> },
             { name: 'Reports', path: '/admin/analytics', icon: <AnalyticsIcon /> },
-            { name: 'Settings', path: '/admin/settings', icon: <SettingsIcon /> },
         ],
         seller: [
-            { name: 'Public Home', path: '/', icon: <HomeIcon /> },
             { name: 'Dashboard', path: '/seller', icon: <DashboardIcon /> },
             { name: 'Live Orders', path: '/seller/orders', icon: <OrdersIcon /> },
-            { name: 'Past Orders', path: '/seller/history', icon: <HistoryIcon /> },
+            { name: 'Products', path: '/seller/catalog', icon: <InventoryIcon /> },
             { name: 'Categories', path: '/seller/categories', icon: <CategoryIcon /> },
-            { name: 'Sub Categories', path: '/seller/subcategories', icon: <CategoryIcon /> },
-            { name: 'My Catalog', path: '/seller/catalog', icon: <InventoryIcon /> },
+            { name: 'Subcategories', path: '/seller/subcategories', icon: <CategoryIcon /> },
+            { name: 'Completed Orders', path: '/seller/orders/completed', icon: <HistoryIcon /> },
             { name: 'Sales Insights', path: '/seller/sales', icon: <AnalyticsIcon /> },
-            { name: 'Store Account', path: '/seller/account', icon: <SettingsIcon /> },
         ],
         delivery: [
-            { name: 'Public Home', path: '/', icon: <HomeIcon /> },
-            { name: 'Driver Dashboard', path: '/delivery', icon: <DeliveryIcon /> },
-            { name: 'Active Trips', path: '/delivery/trips', icon: <ActiveIcon /> },
-            { name: 'Past Orders', path: '/delivery/history', icon: <HistoryIcon /> },
-            { name: 'Earning Ledger', path: '/delivery/earnings', icon: <EarningsIcon /> },
-            { name: 'My Account', path: '/delivery/profile', icon: <SettingsIcon /> },
+            { name: 'Dashboard', path: '/delivery', icon: <DashboardIcon /> },
+            { name: 'Available Deliveries', path: '/delivery/available', icon: <AlertIcon /> },
+            { name: 'Active Deliveries', path: '/delivery/active', icon: <ActiveIcon /> },
+            { name: 'Completed Deliveries', path: '/delivery/completed', icon: <HistoryIcon /> },
         ],
-        user: [
-            { name: 'Public Home', path: '/', icon: <HomeIcon /> },
-            { name: 'Overview', path: '/user/dashboard', icon: <DashboardIcon /> },
-            { name: 'Order History', path: '/orders', icon: <OrdersIcon /> },
-            { name: 'Edit Profile', path: '/user/profile', icon: <SettingsIcon /> },
-        ]
     };
 
-    const links = menuItems[role as keyof typeof menuItems] || menuItems.admin;
+    const links = menuItems[role as keyof typeof menuItems] || [];
 
     const drawerContent = (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#1e293b', color: 'white' }}>

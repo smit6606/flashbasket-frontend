@@ -78,7 +78,7 @@ export default function AdminDashboard() {
     <Box sx={{ p: 1 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-end" sx={{ mb: 6 }}>
         <Box>
-          <Typography variant="h3" sx={{ fontWeight: 900, letterSpacing: '-0.02em' }}>Global Dashboard</Typography>
+          <Typography variant="h3" sx={{ fontWeight: 900, letterSpacing: '-0.02em' }}>Dashboard</Typography>
           <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', mt: 1, letterSpacing: '0.1em' }}>
             Monitoring FlashBasket ecosystem performance
           </Typography>
@@ -128,7 +128,7 @@ export default function AdminDashboard() {
                 <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase' }}>Updated Real-time</Typography>
               </Stack>
               <Stack spacing={2}>
-                {['Manage All Sellers', 'View Payment History', 'System Logs', 'Bulk Notify Users'].map((label) => (
+                {['Sellers', 'Payment History', 'System Logs', 'Bulk Notify Users'].map((label) => (
                   <Button
                     key={label}
                     fullWidth

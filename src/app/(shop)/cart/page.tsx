@@ -255,7 +255,13 @@ export default function CartPage() {
               totalSavings={cartData.totalSavings}
               promoDiscount={cartData.promoDiscount}
               onCheckout={handleCheckout}
+              disabled={cartData.items.some(item => !item.isAvailable)}
             />
+            {cartData.items.some(item => !item.isAvailable) && (
+              <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 800, mt: 2, display: 'block', textAlign: 'center' }}>
+                Remove unavailable items to proceed with checkout
+              </Typography>
+            )}
           </motion.div>
         </Grid>
       </Grid>

@@ -108,34 +108,8 @@ export default function GoogleMapPicker({ onLocationSelect, initialLocation }: G
         }
     };
 
-    if (!apiKey) {
-        return (
-            <Box sx={{ height: 350, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#fff1f2', border: '1px dashed #f43f5e', borderRadius: 4, p: 4, textAlign: 'center' }}>
-                <Typography variant="h6" sx={{ color: '#e11d48', fontWeight: 900, mb: 1 }}>Maps Configuration Error</Typography>
-                <Typography variant="body2" sx={{ color: '#9f1239', fontWeight: 600, mb: 2 }}>
-                    <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> is missing in <code>.env.local</code>.
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    Please add your key and restart the dev server.
-                </Typography>
-            </Box>
-        );
-    }
-
-    if (loadError) {
-        return (
-            <Box sx={{ height: 350, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#fff1f2', border: '1px dashed #f43f5e', borderRadius: 4, p: 4, textAlign: 'center' }}>
-                <Typography variant="h6" sx={{ color: '#e11d48', fontWeight: 900, mb: 1 }}>Google Maps Error</Typography>
-                <Typography variant="body2" sx={{ color: '#9f1239', fontWeight: 600 }}>
-                    {loadError.message.includes('ApiProjectMapError') 
-                        ? "The project associated with this key was not found or the API is not enabled." 
-                        : "Failed to load Google Maps. Please check your key and billing."}
-                </Typography>
-                <Typography variant="caption" sx={{ mt: 2, color: 'text.secondary', fontSize: '10px' }}>
-                    {loadError.message}
-                </Typography>
-            </Box>
-        );
+    if (!apiKey || loadError) {
+        return null;
     }
 
     if (!isLoaded) return (

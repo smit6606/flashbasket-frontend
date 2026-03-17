@@ -66,6 +66,7 @@ export default function SellerProductsPage() {
         page: 0,
         pageSize: 10,
     });
+    const [sellerStatus, setSellerStatus] = useState<string>('Active');
     const [sortModel, setSortModel] = useState<GridSortModel>([
         { field: 'createdAt', sort: 'desc' },
     ]);
@@ -86,6 +87,9 @@ export default function SellerProductsPage() {
                 sortBy: sortModel[0]?.field || 'createdAt',
                 sortOrder: sortModel[0]?.sort || 'desc',
             });
+
+            const dashboardRes = await api.get('/seller/dashboard');
+            setSellerStatus(dashboardRes.data.stats?.sellerStatus || 'Active');
 
             const response = await api.get(`/seller/products?${params.toString()}`);
             setProducts(response.data.items || []);
@@ -179,7 +183,8 @@ export default function SellerProductsPage() {
                     sx={{ 
                         height: '100%', 
                         width: '100%',
-                        py: 0.5
+                        py: 2,
+                        minWidth: 0
                     }}
                 >
                     <Avatar
@@ -294,12 +299,22 @@ export default function SellerProductsPage() {
                         </IconButton>
                     </CustomTooltip>
                     <CustomTooltip title="Edit Product">
-                        <IconButton size="small" onClick={() => router.push(`/seller/catalog/edit/${params.row.id}`)} sx={{ color: 'info.main' }}>
+                        <IconButton 
+                            size="small" 
+                            onClick={() => router.push(`/seller/catalog/edit/${params.row.id}`)} 
+                            disabled={sellerStatus === 'Suspended'}
+                            sx={{ color: 'info.main' }}
+                        >
                             <EditIcon fontSize="small" />
                         </IconButton>
                     </CustomTooltip>
                     <CustomTooltip title="Delete Product">
-                        <IconButton size="small" onClick={() => handleDeleteClick(params.row.id)} sx={{ color: 'error.main' }}>
+                        <IconButton 
+                            size="small" 
+                            onClick={() => handleDeleteClick(params.row.id)} 
+                            disabled={sellerStatus === 'Suspended'}
+                            sx={{ color: 'error.main' }}
+                        >
                             <DeleteIcon fontSize="small" />
                         </IconButton>
                     </CustomTooltip>
@@ -358,6 +373,7 @@ export default function SellerProductsPage() {
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={() => router.push('/seller/catalog/add')}
+                    disabled={sellerStatus === 'Suspended'}
                     sx={{ px: 4, py: 1.5, borderRadius: '16px', fontWeight: 900, boxShadow: '0 8px 24px rgba(12, 131, 31, 0.2)' }}
                 >
                     Add New Product
@@ -436,22 +452,22 @@ export default function SellerProductsPage() {
                         sortModel={sortModel}
                         onSortModelChange={handleSortModelChange}
                         disableRowSelectionOnClick
-                        rowHeight={92}
+                        rowHeight={100}
+                        columnHeaderHeight={64}
                         pageSizeOptions={[10, 25, 50]}
                         sx={{
                             border: 'none',
                             '& .MuiDataGrid-columnHeaders': {
                                 bgcolor: '#f8fafc',
+                                borderBottom: '1px solid #f1f5f9',
                                 color: 'text.secondary',
                                 fontWeight: 900,
                                 textTransform: 'uppercase',
-                                fontSize: '0.7rem',
+                                fontSize: '0.75rem',
                                 letterSpacing: '0.1em',
                             },
                             '& .MuiDataGrid-cell': {
                                 borderBottom: '1px solid #f8fafc',
-                                display: 'flex',
-                                alignItems: 'center',
                                 '&:focus': { outline: 'none' }
                             },
                             '& .MuiDataGrid-footerContainer': {
