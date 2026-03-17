@@ -34,12 +34,16 @@ export default function SellerHistoryPage() {
     useEffect(() => {
         const fetchHistory = async () => {
             try {
-                const response = await api.get('/orders/seller');
-                const completed = response.data.filter((o: any) => 
+                // Fetch with a high limit for history view, or implement pagination later
+                const response = await api.get('/orders/seller?limit=100');
+                const orderSource = response.data?.items || (Array.isArray(response.data) ? response.data : []);
+                
+                const completed = orderSource.filter((o: any) => 
                     ['shipped', 'out-for-delivery', 'delivered', 'completed', 'cancelled'].includes(o.status)
                 );
                 setOrders(completed);
             } catch (err: any) {
+                console.error("Order history load error:", err);
                 toast.error("Failed to load order history");
             } finally {
                 setLoading(false);
@@ -49,8 +53,8 @@ export default function SellerHistoryPage() {
     }, []);
 
     const filteredOrders = orders.filter((o: any) => 
-        o.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
-        o.User?.user_name?.toLowerCase().includes(search.toLowerCase())
+        (o.orderNumber?.toLowerCase().includes(search.toLowerCase()) ||
+         o.User?.user_name?.toLowerCase().includes(search.toLowerCase())) ?? false
     );
 
     return (

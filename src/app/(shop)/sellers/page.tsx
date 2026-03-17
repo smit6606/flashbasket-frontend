@@ -17,8 +17,8 @@ import {
     InputBase,
     Slider,
     Divider,
-    Tooltip,
 } from '@mui/material';
+import CustomTooltip from '@/components/common/CustomTooltip';
 import {
     Storefront as StoreIcon,
     MyLocation as LocationIcon,
@@ -245,7 +245,7 @@ export default function SellersPage() {
 
                     {/* Action Buttons */}
                     <Stack direction="row" spacing={1.5} sx={{ width: { xs: '100%', md: 'auto' } }}>
-                        <Tooltip title="Reset all filters">
+                        <CustomTooltip title="Reset all filters">
                             <Button 
                                 variant="outlined" 
                                 onClick={handleReset}
@@ -253,7 +253,7 @@ export default function SellersPage() {
                             >
                                 All
                             </Button>
-                        </Tooltip>
+                        </CustomTooltip>
                         
                         <Button 
                             variant="contained" 

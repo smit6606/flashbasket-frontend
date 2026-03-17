@@ -8,7 +8,6 @@ import {
     Typography,
     Box,
     Badge,
-    Tooltip,
     Avatar,
     Menu,
     MenuItem,
@@ -16,6 +15,8 @@ import {
     Divider,
     alpha,
     Button,
+    Fade,
+    Zoom,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
@@ -32,6 +33,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import MuiBackButton from './MuiBackButton';
 import ConfirmDialog from './ConfirmDialog';
+import CustomTooltip from '../common/CustomTooltip';
 
 const DRAWER_WIDTH = 280;
 
@@ -59,7 +61,6 @@ export default function MuiTopBar({ onMenuClick }: TopBarProps) {
         setIsLogoutModalOpen(false);
         handleClose();
         logout();
-        router.push('/login');
     };
 
     const handleProfile = () => {
@@ -134,11 +135,13 @@ export default function MuiTopBar({ onMenuClick }: TopBarProps) {
                         <SearchIcon fontSize="small" />
                     </IconButton>
 
-                    <Tooltip title="View Public Website">
-                        <IconButton component={Link} href="/" sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main', bgcolor: alpha('#0C831F', 0.05) } }}>
-                            <LaunchIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
+                    {user?.role !== 'delivery' && (
+                        <CustomTooltip title="View Public Website" placement="bottom">
+                            <IconButton component={Link} href="/" sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main', bgcolor: alpha('#0C831F', 0.05) } }}>
+                                <LaunchIcon fontSize="small" />
+                            </IconButton>
+                        </CustomTooltip>
+                    )}
 
                     <IconButton sx={{ color: 'text.secondary', display: { xs: 'none', sm: 'flex' } }}>
                         <Badge badgeContent={4} color="primary" sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', height: 16, minWidth: 16, fontWeight: 900 } }}>

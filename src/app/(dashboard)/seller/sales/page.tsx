@@ -14,8 +14,8 @@ import {
     Paper,
     Avatar,
     Chip,
-    Tooltip,
 } from '@mui/material';
+import CustomTooltip from '@/components/common/CustomTooltip';
 import {
     TrendingUp as TrendingIcon,
     ShoppingBag as OrdersIcon,
@@ -88,7 +88,7 @@ export default function SellerAnalyticsPage() {
                         <Box sx={{ height: 300, display: 'flex', alignItems: 'flex-end', gap: 2, pt: 4 }}>
                             {data?.charts?.monthlySales?.map((m: any, i: number) => (
                                 <Box key={i} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                                    <Tooltip title={`₹${m.revenue}`} arrow>
+                                    <CustomTooltip title={`₹${m.revenue}`} arrow>
                                         <Box sx={{ 
                                             width: '100%', 
                                             bgcolor: alpha('#0C831F', 0.8), 
@@ -96,7 +96,7 @@ export default function SellerAnalyticsPage() {
                                             height: `${(m.revenue / (Math.max(...data.charts.monthlySales.map((x:any)=>x.revenue)) || 1)) * 200}px`,
                                             transition: 'all 0.3s'
                                         }} />
-                                    </Tooltip>
+                                    </CustomTooltip>
                                     <Typography variant="caption" sx={{ fontWeight: 800 }}>{m.month}</Typography>
                                 </Box>
                             ))}

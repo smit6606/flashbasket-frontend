@@ -18,9 +18,10 @@ const defaultCenter = {
 
 interface GoogleMapPickerProps {
     onLocationSelect: (location: { lat: number; lng: number; address: string }) => void;
+    initialLocation?: { lat: number; lng: number };
 }
 
-export default function GoogleMapPicker({ onLocationSelect }: GoogleMapPickerProps) {
+export default function GoogleMapPicker({ onLocationSelect, initialLocation }: GoogleMapPickerProps) {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
     const { isLoaded, loadError } = useJsApiLoader({
@@ -30,8 +31,15 @@ export default function GoogleMapPicker({ onLocationSelect }: GoogleMapPickerPro
     });
 
     const [map, setMap] = useState<google.maps.Map | null>(null);
-    const [center, setCenter] = useState(defaultCenter);
-    const [markerPos, setMarkerPos] = useState(defaultCenter);
+    const [center, setCenter] = useState(initialLocation || defaultCenter);
+    const [markerPos, setMarkerPos] = useState(initialLocation || defaultCenter);
+
+    useEffect(() => {
+        if (initialLocation) {
+            setCenter(initialLocation);
+            setMarkerPos(initialLocation);
+        }
+    }, [initialLocation]);
     const searchBoxRef = useRef<google.maps.places.SearchBox | null>(null);
 
     const getAddressFromCoords = async (lat: number, lng: number) => {

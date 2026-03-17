@@ -15,7 +15,6 @@ import {
     Avatar,
     Menu,
     MenuItem,
-    Tooltip,
     useScrollTrigger,
     Slide,
     Zoom,
@@ -155,7 +154,6 @@ export default function MuiNavbar() {
         logout();
         setIsLogoutModalOpen(false);
         handleClose();
-        router.push('/login');
     };
 
     const toggleDrawer = (open: boolean) => (event: React.KeyboardEvent | React.MouseEvent) => {
@@ -308,35 +306,11 @@ export default function MuiNavbar() {
                                             </Box>
                                         )}
                                         {!isBelow425 && (
-                                            <Tooltip 
-                                                title="Manage Profile" 
-                                                arrow 
-                                                TransitionComponent={Zoom}
-                                                slotProps={{
-                                                    tooltip: {
-                                                        sx: {
-                                                            bgcolor: '#1e293b',
-                                                            fontWeight: 800,
-                                                            borderRadius: 2,
-                                                            fontSize: '0.75rem',
-                                                            px: 1.5,
-                                                            py: 0.75,
-                                                            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
-                                                        }
-                                                    },
-                                                    arrow: {
-                                                        sx: {
-                                                            color: '#1e293b'
-                                                        }
-                                                    }
-                                                }}
-                                            >
-                                                <IconButton onClick={handleMenu} sx={{ p: 0.5 }}>
-                                                    <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', fontSize: '0.9rem', fontWeight: 700 }}>
-                                                        {user.user_name?.charAt(0).toUpperCase()}
-                                                    </Avatar>
-                                                </IconButton>
-                                            </Tooltip>
+                                            <IconButton onClick={handleMenu} sx={{ p: 0.5 }}>
+                                                <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', fontSize: '0.9rem', fontWeight: 700 }}>
+                                                    {user.user_name?.charAt(0).toUpperCase()}
+                                                </Avatar>
+                                            </IconButton>
                                         )}
                                         <Menu
                                             anchorEl={anchorEl}
@@ -346,20 +320,30 @@ export default function MuiNavbar() {
                                                 sx: { mt: 1.5, minWidth: 200, borderRadius: 2, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }
                                             }}
                                         >
-                                            <MenuItem onClick={() => { handleClose(); window.location.href = '/'; }}>Profile</MenuItem>
+                                            <MenuItem divider onClick={() => { 
+                                                handleClose(); 
+                                                const path = user.role === 'seller' ? '/seller/account' 
+                                                       : user.role === 'delivery' ? '/delivery/profile' 
+                                                       : user.role === 'admin' ? '/admin/settings'
+                                                       : '/user/profile';
+                                                router.push(path);
+                                            }}>Profile</MenuItem>
+
                                             {user.role === 'delivery' && (
-                                                <MenuItem onClick={() => { handleClose(); router.push('/delivery'); }} sx={{ fontWeight: 800, color: 'primary.main' }}>Delivery Panel</MenuItem>
+                                                <MenuItem onClick={() => { handleClose(); router.push('/delivery'); }} sx={{ fontWeight: 800, color: 'primary.main' }}>Delivery Dashboard</MenuItem>
                                             )}
+                                            {user.role === 'seller' && (
+                                                <MenuItem onClick={() => { handleClose(); router.push('/seller'); }} sx={{ fontWeight: 800, color: 'primary.main' }}>Seller Dashboard</MenuItem>
+                                            )}
+                                            {user.role === 'admin' && (
+                                                <MenuItem onClick={() => { handleClose(); router.push('/admin'); }} sx={{ fontWeight: 800, color: 'primary.main' }}>Admin Dashboard</MenuItem>
+                                            )}
+                                            
                                             {user.role === 'user' && [
                                                 <MenuItem key="favourites" onClick={() => { handleClose(); router.push('/user/favourites'); }}>Favourites</MenuItem>,
                                                 <MenuItem key="orders" onClick={() => { handleClose(); router.push('/orders'); }}>Orders</MenuItem>,
                                             ]}
-                                            {user.role === 'seller' && (
-                                                <MenuItem onClick={() => { handleClose(); router.push('/seller'); }}>Seller Dashboard</MenuItem>
-                                            )}
-                                            {user.role === 'admin' && (
-                                                <MenuItem onClick={() => { handleClose(); router.push('/admin'); }}>Admin Dashboard</MenuItem>
-                                            )}
+                                            
                                             <Divider />
                                             <MenuItem onClick={() => { setIsLogoutModalOpen(true); handleClose(); }} sx={{ color: 'error.main', fontWeight: 700 }}>Logout</MenuItem>
                                         </Menu>

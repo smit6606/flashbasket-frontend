@@ -377,7 +377,14 @@ export default function ProfileEditor() {
                                         </Typography>
                                         
                                         <Box sx={{ mb: 4, borderRadius: 5, overflow: 'hidden', border: '1px solid #f1f5f9' }}>
-                                            <GoogleMapPicker onLocationSelect={handleLocationSelect} />
+                                            <GoogleMapPicker 
+                                                onLocationSelect={handleLocationSelect} 
+                                                initialLocation={
+                                                    formData.latitude && formData.longitude 
+                                                        ? { lat: parseFloat(formData.latitude), lng: parseFloat(formData.longitude) } 
+                                                        : undefined
+                                                }
+                                            />
                                         </Box>
 
                                         <Grid container spacing={3}>

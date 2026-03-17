@@ -56,9 +56,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const handleUnauthorized = (event: any) => {
       setToken(null);
       setUser(null);
-      const message = event.detail?.message || 'Session expired. Please login again.';
+      localStorage.clear();
+      sessionStorage.clear();
+      const message = event.detail?.message || 'Session expired or Access Denied. Please login again.';
       toast.error(message, { toastId: 'session-expired' });
-      router.push('/login');
+      
+      if (window.location.pathname !== '/login') {
+          window.location.href = '/login'; // Hard redirect to wipe memory state
+      }
     };
 
     window.addEventListener('unauthorized-redirect', handleUnauthorized);
@@ -66,25 +71,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [router]);
 
   const login = (data: { token: string; user: User }) => {
+    // 1. Wipe previous leftovers just in case
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // 2. Set new session
     setToken(data.token);
     setUser(data.user);
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
     
-    // Redirect based on role
-    if (data.user.role === 'admin') router.push('/admin');
-    else if (data.user.role === 'seller') router.push('/seller');
-    else if (data.user.role === 'delivery') router.push('/delivery');
-    else router.push('/');
+    // 3. Force hard navigation to clear any cached queries/React states in the background
+    let targetPath = '/';
+    if (data.user.role === 'admin') targetPath = '/admin';
+    else if (data.user.role === 'seller') targetPath = '/seller';
+    else if (data.user.role === 'delivery') targetPath = '/delivery';
+    
+    window.location.href = targetPath;
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    toast.info('Logged Out');
-    router.push('/login');
+    // Explicitly wipe all storages to prevent data leakage
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    toast.info('Logged Out successfully');
+    window.location.href = '/login'; // Hard redirect to wipe memory state
   };
 
   const refreshUser = async () => {

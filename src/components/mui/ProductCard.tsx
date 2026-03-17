@@ -69,18 +69,21 @@ const StyledCard = styled(motion.create(Card))(({ theme }) => ({
         '& .card-image': {
             transform: 'scale(1.1) rotate(2deg)',
         },
-        '& .action-buttons': {
+        '&:hover .action-buttons': {
             opacity: 1,
-            transform: 'translateX(0)',
         },
     },
 }));
 
 const ImageContainer = styled(Box)({
     position: 'relative',
-    paddingTop: '100%',
-    backgroundColor: '#f8fafc',
+    height: '220px',
+    width: '100%',
+    backgroundColor: '#fff',
     overflow: 'hidden',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
 });
 
 const ActionButtons = styled(Stack)({
@@ -89,7 +92,6 @@ const ActionButtons = styled(Stack)({
     right: 12,
     zIndex: 10,
     opacity: 0,
-    transform: 'translateX(10px)',
     transition: 'all 0.3s ease',
 });
 
@@ -182,7 +184,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             whileHover={{ y: -8, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.12)' }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
         >
-            <ImageContainer sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: isBelow375 ? 1 : 2 }}>
+            <ImageContainer sx={{ p: isBelow375 ? 1 : 2 }}>
                 {discountPercent > 0 && (
                     <Box sx={{ 
                         position: 'absolute', 
@@ -207,10 +209,8 @@ export default function ProductCard({ product }: ProductCardProps) {
                     alt={product.productName}
                     className="card-image"
                     sx={{
-                        maxWidth: '100%',
-                        maxHeight: '100%',
-                        width: 'auto',
-                        height: 'auto',
+                        width: '100%',
+                        height: '100%',
                         objectFit: 'contain',
                         transition: 'transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1)',
                     }}

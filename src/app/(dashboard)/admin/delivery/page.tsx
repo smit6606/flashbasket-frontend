@@ -17,6 +17,7 @@ import {
     IconButton,
     Tooltip
 } from '@mui/material';
+import CustomTooltip from '@/components/common/CustomTooltip';
 import { 
     LocalShipping as DriverIcon,
     Verified as VerifiedIcon,
@@ -116,12 +117,12 @@ export default function AdminDriversPage() {
                                         />
                                     </TableCell>
                                     <TableCell align="right">
-                                        <Tooltip title="Deactivate">
+                                        <CustomTooltip title="Deactivate">
                                             <IconButton color="error" size="small"><BlockIcon fontSize="small" /></IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Verify">
+                                        </CustomTooltip>
+                                        <CustomTooltip title="Verify">
                                             <IconButton color="success" size="small"><VerifiedIcon fontSize="small" /></IconButton>
-                                        </Tooltip>
+                                        </CustomTooltip>
                                     </TableCell>
                                 </TableRow>
                             ))

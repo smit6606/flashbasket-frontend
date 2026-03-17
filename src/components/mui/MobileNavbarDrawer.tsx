@@ -52,7 +52,6 @@ export default function MobileNavbarDrawer({
     const handleLogout = () => {
         logout();
         onClose();
-        router.push('/login');
     };
 
     return (

@@ -13,7 +13,6 @@ import {
     TextField,
     InputAdornment,
     alpha,
-    Tooltip,
     Menu,
     MenuItem,
 } from '@mui/material';
@@ -39,6 +38,7 @@ import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
 import debounce from 'lodash/debounce';
 import ConfirmDialog from '@/components/mui/ConfirmDialog';
+import CustomTooltip from '@/components/common/CustomTooltip';
 
 interface Product {
     id: number;
@@ -284,7 +284,7 @@ export default function SellerProductsPage() {
             align: 'right',
             renderCell: (params: GridRenderCellParams) => (
                 <Stack direction="row" spacing={0.5} justifyContent="flex-end" alignItems="center" sx={{ height: '100%', width: '100%' }}>
-                    <Tooltip title={params.row.status === 'active' ? "Hide from Users" : "Show to Users"}>
+                    <CustomTooltip title={params.row.status === 'active' ? "Hide from Users" : "Show to Users"}>
                         <IconButton 
                             size="small" 
                             onClick={() => toggleStatus(params.row.id, params.row.status)}
@@ -292,17 +292,17 @@ export default function SellerProductsPage() {
                         >
                             {params.row.status === 'active' ? <VisibleIcon fontSize="small" /> : <HiddenIcon fontSize="small" />}
                         </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Edit Product">
+                    </CustomTooltip>
+                    <CustomTooltip title="Edit Product">
                         <IconButton size="small" onClick={() => router.push(`/seller/catalog/edit/${params.row.id}`)} sx={{ color: 'info.main' }}>
                             <EditIcon fontSize="small" />
                         </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete Product">
+                    </CustomTooltip>
+                    <CustomTooltip title="Delete Product">
                         <IconButton size="small" onClick={() => handleDeleteClick(params.row.id)} sx={{ color: 'error.main' }}>
                             <DeleteIcon fontSize="small" />
                         </IconButton>
-                    </Tooltip>
+                    </CustomTooltip>
                 </Stack>
             ),
         },

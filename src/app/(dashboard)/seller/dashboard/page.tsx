@@ -12,7 +12,6 @@ import {
     alpha,
     Skeleton,
     IconButton,
-    Tooltip,
 } from '@mui/material';
 import {
     TrendingUp as RevenueIcon,

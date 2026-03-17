@@ -9,7 +9,6 @@ export default function DashboardTopBar() {
 
     const handleLogout = () => {
         logout();
-        router.push('/login');
     };
 
     return (

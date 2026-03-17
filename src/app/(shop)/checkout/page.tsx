@@ -41,6 +41,7 @@ import {
     Add as AddIcon,
     LocationOn as LocationIcon,
     HighlightOff as HighlightOffIcon,
+    Edit as EditIcon,
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -105,6 +106,7 @@ export default function CheckoutPage() {
     const [showAddressForm, setShowAddressForm] = useState(false);
     const [couponCode, setCouponCode] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+    const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     const [addressForm, setAddressForm] = useState({
@@ -139,6 +141,39 @@ export default function CheckoutPage() {
                 icon: <span>📍</span>
             });
         }
+    };
+
+    const handleEditAddress = (addr: any) => {
+        setEditingAddressId(addr.id);
+        setAddressForm({
+            fullName: addr.fullName,
+            phone: addr.phone,
+            houseNumber: addr.houseNumber,
+            area: addr.area,
+            landmark: addr.landmark || '',
+            city: addr.city,
+            state: addr.state,
+            zip: addr.pincode,
+            addressType: addr.addressType
+        });
+        setLocation({ lat: parseFloat(addr.latitude), lng: parseFloat(addr.longitude) });
+        setShowAddressForm(true);
+    };
+
+    const handleAddNewClick = () => {
+        setEditingAddressId(null);
+        setAddressForm({
+            fullName: '',
+            phone: '',
+            houseNumber: '',
+            area: '',
+            landmark: '',
+            city: 'Surat',
+            state: 'Gujarat',
+            zip: '395001',
+            addressType: 'Home'
+        });
+        setShowAddressForm(true);
     };
 
     const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'cod' | 'upi'>('cod');
@@ -194,18 +229,31 @@ export default function CheckoutPage() {
         if (!validateAddressForm()) return;
         
         try {
-            const res = await api.post('/addresses/add', {
-                ...addressForm,
-                phone: normalizePhoneForBackend(addressForm.phone),
-                pincode: addressForm.zip,
-                latitude: location.lat,
-                longitude: location.lng
-            });
-            setAddresses(prev => [...prev, res.data]);
-            setSelectedAddressId(res.data.id);
+            if (editingAddressId) {
+                const res = await api.patch(`/addresses/update/${editingAddressId}`, {
+                    ...addressForm,
+                    phone: normalizePhoneForBackend(addressForm.phone),
+                    pincode: addressForm.zip,
+                    latitude: location.lat,
+                    longitude: location.lng
+                });
+                setAddresses(prev => prev.map(a => a.id === editingAddressId ? res.data : a));
+                toast.success('Address updated');
+            } else {
+                const res = await api.post('/addresses/add', {
+                    ...addressForm,
+                    phone: normalizePhoneForBackend(addressForm.phone),
+                    pincode: addressForm.zip,
+                    latitude: location.lat,
+                    longitude: location.lng
+                });
+                setAddresses(prev => [...prev, res.data]);
+                setSelectedAddressId(res.data.id);
+                toast.success('Address saved');
+            }
             setShowAddressForm(false);
+            setEditingAddressId(null);
             setErrors({});
-            toast.success('Address saved');
         } catch (err: any) {
             toast.error(err.message || 'Failed to save address');
         }
@@ -320,8 +368,26 @@ export default function CheckoutPage() {
                                                 }}
                                             >
                                                 {selectedAddressId === addr.id && (
-                                                    <Box sx={{ position: 'absolute', top: 12, right: 12 }}>
+                                                    <Box sx={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 1 }}>
+                                                        <IconButton 
+                                                            size="small" 
+                                                            onClick={(e) => { e.stopPropagation(); handleEditAddress(addr); }}
+                                                            sx={{ bgcolor: 'white', '&:hover': { bgcolor: '#f1f5f9' }, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}
+                                                        >
+                                                            <EditIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                                        </IconButton>
                                                         <ReviewIcon color="primary" sx={{ fontSize: 20 }} />
+                                                    </Box>
+                                                )}
+                                                {selectedAddressId !== addr.id && (
+                                                    <Box sx={{ position: 'absolute', top: 12, right: 12 }}>
+                                                        <IconButton 
+                                                            size="small" 
+                                                            onClick={(e) => { e.stopPropagation(); handleEditAddress(addr); }}
+                                                            sx={{ bgcolor: 'white', '&:hover': { bgcolor: '#f1f5f9' }, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}
+                                                        >
+                                                            <EditIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                                        </IconButton>
                                                     </Box>
                                                 )}
                                                 <Stack direction="row" spacing={1.5} alignItems="flex-start">
@@ -342,7 +408,7 @@ export default function CheckoutPage() {
                                     <Grid size={{ xs: 12, sm: 6 }}>
                                         <Paper
                                             variant="outlined"
-                                            onClick={() => setShowAddressForm(true)}
+                                            onClick={handleAddNewClick}
                                             sx={{
                                                 p: 2,
                                                 height: '100%',
@@ -372,14 +438,14 @@ export default function CheckoutPage() {
                         ) : (
                             <Box>
                                 <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 4 }}>
-                                    <IconButton onClick={() => setShowAddressForm(false)} size="small" sx={{ bgcolor: '#f1f5f9' }}>
+                                    <IconButton onClick={() => { setShowAddressForm(false); setEditingAddressId(null); }} size="small" sx={{ bgcolor: '#f1f5f9' }}>
                                         <BackIcon fontSize="small" />
                                     </IconButton>
-                                    <Typography variant="h6" sx={{ fontWeight: 800 }}>Add a New Delivery Address</Typography>
+                                    <Typography variant="h6" sx={{ fontWeight: 800 }}>{editingAddressId ? 'Edit Delivery Address' : 'Add a New Delivery Address'}</Typography>
                                 </Stack>
 
                                 <Paper elevation={0} sx={{ borderRadius: 5, overflow: 'hidden', border: '1px solid #f1f5f9', mb: 4 }}>
-                                    <GoogleMapPicker onLocationSelect={handleLocationSelect} />
+                                    <GoogleMapPicker onLocationSelect={handleLocationSelect} initialLocation={location} />
                                 </Paper>
 
                                 <Grid container spacing={3}>
@@ -484,11 +550,11 @@ export default function CheckoutPage() {
                                     variant="contained"
                                     fullWidth
                                     loading={loading}
-                                    loadingText="Saving Address..."
+                                    loadingText={editingAddressId ? "Updating Address..." : "Saving Address..."}
                                     onClick={handleSaveAddress}
                                     sx={{ mt: 5, py: 2, borderRadius: 2, fontWeight: 900 }}
                                 >
-                                    Save Address and Continue
+                                    {editingAddressId ? 'Update Address' : 'Save Address and Continue'}
                                 </LoadingButton>
                             </Box>
                         )}

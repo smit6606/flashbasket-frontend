@@ -159,7 +159,6 @@ export default function MuiSidebar({ mobileOpen, onClose }: SidebarProps) {
                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                         '&:hover': {
                                             bgcolor: isActive ? 'primary.main' : 'rgba(255,255,255,0.08)',
-                                            transform: isActive ? 'none' : 'translateX(4px)',
                                         },
                                         color: isActive ? 'white' : 'rgba(255,255,255,0.7)',
                                         boxShadow: isActive ? '0 8px 20px rgba(12, 131, 31, 0.25)' : 'none',
