@@ -6,7 +6,8 @@ import {
     Skeleton, 
     Grid, 
     Stack, 
-    Paper 
+    Paper,
+    Divider
 } from '@mui/material';
 
 export const ProductSkeleton = () => (
@@ -73,5 +74,3 @@ export const GridSkeleton = ({ count = 8, type = 'product' }: { count?: number, 
     );
 };
 
-// Internal Import for OrderSkeleton Divider
-import { Divider } from '@mui/material';

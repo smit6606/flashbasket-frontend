@@ -24,7 +24,7 @@ export const FavouriteProvider = ({ children }: { children: React.ReactNode }) =
             return;
         }
         try {
-            const response = await api.get('/favourites/my');
+            const response = await api.get('/user/favourites/my');
             const ids = response.data.map((fav: any) => fav.productId);
             setFavouriteIds(ids);
         } catch (error) {
@@ -42,7 +42,7 @@ export const FavouriteProvider = ({ children }: { children: React.ReactNode }) =
             return;
         }
         try {
-            const response = await api.post('/favourites/toggle', { productId });
+            const response = await api.post('/user/favourites/toggle', { productId });
             if (response.data.isFavourite) {
                 setFavouriteIds(prev => [...prev, productId]);
             } else {

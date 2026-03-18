@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
-import { useAuth } from '@/context/AuthContext';
+import { api } from '../../../../lib/api';
+import { useAuth } from '../../../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { formatPhoneForDisplay } from '@/lib/phoneUtils';
+import { formatPhoneForDisplay } from '../../../../lib/phoneUtils';
 import { 
     Box, 
     Stepper, 
@@ -33,8 +33,8 @@ import {
 } from '@mui/icons-material';
 
 import { toast } from 'react-toastify';
-import OrderTimeline from '@/components/OrderTimeline';
-import { GridSkeleton } from '@/components/mui/SkeletonLoaders';
+import OrderTimeline from '../../../../components/OrderTimeline';
+import { GridSkeleton } from '../../../../components/mui/SkeletonLoaders';
 
 interface Order {
     id: number;
@@ -88,7 +88,7 @@ export default function OrdersPage() {
         if (authLoading) return; // Wait for hydration before making routing decisions
 
         if (!token) {
-            router.push('/login?callbackUrl=/orders');
+            router.push('/login?callbackUrl=/user/orders');
             return;
         }
 
@@ -311,7 +311,7 @@ export default function OrdersPage() {
                                             startIcon={<InvoiceIcon />} 
                                             disabled={!isCompleted}
                                             component={Link}
-                                            href={`/orders/invoice/${order.id}`}
+                                            href={`/user/orders/invoice/${order.id}`}
                                             sx={{ 
                                                 borderRadius: 3, 
                                                 fontWeight: 900, 
