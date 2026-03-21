@@ -110,7 +110,7 @@ export default function OrderSuccessPage() {
                     <Grid size={{ xs: 12, sm: 6 }}>
                         <Button
                             component={Link}
-                            href="/orders"
+                            href="/user/orders"
                             variant="outlined"
                             fullWidth
                             size="large"

@@ -14,8 +14,7 @@ import {
     Chip,
     Avatar,
     Stack,
-    IconButton,
-    Tooltip
+    IconButton
 } from '@mui/material';
 import CustomTooltip from '@/components/common/CustomTooltip';
 import { 
@@ -50,8 +49,8 @@ export default function AdminDriversPage() {
     return (
         <Box sx={{ p: 4 }}>
             <Box sx={{ mb: 6 }}>
-                <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b' }}>Delivery Network</Typography>
-                <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600 }}>Manage and verify your fleet of delivery drivers.</Typography>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b' }}>Drivers</Typography>
+                <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600 }}>Manage and verify your fleet of delivery partners.</Typography>
             </Box>
 
             <TableContainer component={Paper} sx={{ borderRadius: 6, boxShadow: '0 10px 40px rgba(0,0,0,0.05)', overflow: 'hidden' }}>

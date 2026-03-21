@@ -162,7 +162,8 @@ export default function AdminProductsPage() {
                     sx={{ 
                         height: '100%', 
                         width: '100%', 
-                        py: 0.5 
+                        py: 2, // Increased padding
+                        minWidth: 0
                     }}
                 >
                     <Avatar
@@ -186,7 +187,7 @@ export default function AdminProductsPage() {
                             variant="subtitle2" 
                             sx={{ 
                                 fontWeight: 900, 
-                                color: params.row.status === 'hidden' ? 'text.disabled' : '#1e293b',
+                                color: params.row.status === 'Hidden' ? 'text.disabled' : '#1e293b',
                                 lineHeight: 1.4,
                                 textTransform: 'capitalize',
                                 overflow: 'hidden',
@@ -208,18 +209,53 @@ export default function AdminProductsPage() {
         {
             field: 'seller',
             headerName: 'Seller',
-            width: 200,
+            width: 250,
             renderCell: (params: GridRenderCellParams) => (
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ height: '100%' }}>
-                    <SellerIcon sx={{ color: 'primary.main', fontSize: 18 }} />
-                    <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 800, color: '#1e293b' }}>
+                <Stack 
+                    direction="row" 
+                    spacing={1.5} 
+                    alignItems="center" 
+                    sx={{ 
+                        height: '100%',
+                        width: '100%',
+                        minWidth: 0
+                    }}
+                >
+                    <Box sx={{ 
+                        p: 1, 
+                        borderRadius: 2, 
+                        bgcolor: alpha('#0C831F', 0.08),
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                    }}>
+                        <SellerIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+                    </Box>
+                    <Stack spacing={0.2} sx={{ minWidth: 0, overflow: 'hidden' }}>
+                        <Typography 
+                            variant="subtitle2" 
+                            noWrap
+                            sx={{ 
+                                fontWeight: 900, 
+                                color: '#1e293b',
+                                lineHeight: 1.2
+                            }}
+                        >
                             {params.row.Seller?.shop_name || 'N/A'}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 700 }}>
+                        <Typography 
+                            variant="caption" 
+                            noWrap
+                            sx={{ 
+                                color: 'text.secondary', 
+                                fontWeight: 700,
+                                opacity: 0.8
+                            }}
+                        >
                             {params.row.Seller?.email}
                         </Typography>
-                    </Box>
+                    </Stack>
                 </Stack>
             ),
         },
@@ -257,11 +293,12 @@ export default function AdminProductsPage() {
             width: 120,
             renderCell: (params: GridRenderCellParams) => {
                 const colors: any = {
-                    active: { bg: alpha('#0C831F', 0.1), text: '#0C831F' },
-                    pending: { bg: alpha('#f59e0b', 0.1), text: '#f59e0b' },
-                    rejected: { bg: alpha('#ef4444', 0.1), text: '#ef4444' },
-                    hidden: { bg: alpha('#64748b', 0.1), text: '#64748b' },
-                    'out-of-stock': { bg: alpha('#ef4444', 0.1), text: '#ef4444' }
+                    'Active': { bg: alpha('#0C831F', 0.1), text: '#0C831F' },
+                    'Pending': { bg: alpha('#f59e0b', 0.1), text: '#f59e0b' },
+                    'Rejected': { bg: alpha('#ef4444', 0.1), text: '#ef4444' },
+                    'Hidden': { bg: alpha('#64748b', 0.1), text: '#64748b' },
+                    'Inactive': { bg: alpha('#64748b', 0.1), text: '#64748b' },
+                    'Out-of-Stock': { bg: alpha('#ef4444', 0.1), text: '#ef4444' }
                 };
                 const color = colors[params.row.status] || { bg: '#f1f5f9', text: 'text.secondary' };
                 return (
@@ -377,9 +414,9 @@ export default function AdminProductsPage() {
     return (
         <Box sx={{ p: 1 }}>
             <Box sx={{ mb: 6 }}>
-                <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>Global Catalog</Typography>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>Products</Typography>
                 <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1 }}>
-                    Monitoring {totalItems} items across all marketplace sellers.
+                    Manage and monitor all items across the marketplace sellers.
                 </Typography>
             </Box>
 
@@ -469,22 +506,22 @@ export default function AdminProductsPage() {
                         sortModel={sortModel}
                         onSortModelChange={handleSortModelChange}
                         disableRowSelectionOnClick
-                        rowHeight={92}
+                        rowHeight={100} // Slightly more height for better breathing room
+                        columnHeaderHeight={64}
                         pageSizeOptions={[10, 25, 50]}
                         sx={{
                             border: 'none',
                             '& .MuiDataGrid-columnHeaders': {
                                 bgcolor: '#f8fafc',
+                                borderBottom: '1px solid #f1f5f9',
                                 color: 'text.secondary',
                                 fontWeight: 900,
                                 textTransform: 'uppercase',
-                                fontSize: '0.7rem',
+                                fontSize: '0.75rem',
                                 letterSpacing: '0.1em',
                             },
                             '& .MuiDataGrid-cell': {
                                 borderBottom: '1px solid #f8fafc',
-                                display: 'flex',
-                                alignItems: 'center',
                                 '&:focus': { outline: 'none' }
                             },
                             '& .MuiDataGrid-footerContainer': {

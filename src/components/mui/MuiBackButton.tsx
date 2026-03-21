@@ -4,7 +4,7 @@ import React from 'react';
 import { Button, IconButton, Stack, Typography, alpha } from '@mui/material';
 import { ArrowBack as BackIcon } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
-import CustomTooltip from './CustomTooltip';
+import CustomTooltip from '../common/CustomTooltip';
 
 interface MuiBackButtonProps {
     variant?: 'button' | 'icon';

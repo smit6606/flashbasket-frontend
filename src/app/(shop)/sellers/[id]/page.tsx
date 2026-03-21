@@ -350,7 +350,7 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
                                                         >
                                                             <IconButton 
                                                                 size="small" 
-                                                                onClick={(e) => handleUpdateQuantity(e, product.id, cartItem.id, cartItem.quantity - 1)}
+                                                                onClick={(e) => handleUpdateQuantity(e, product.id, cartItem.id!, cartItem.quantity! - 1)}
                                                                 disabled={isUpdating}
                                                                 sx={{ color: 'white', '&:hover': { bgcolor: 'primary.dark' } }}
                                                             >
@@ -363,7 +363,7 @@ export default function SellerProfilePage({ params }: { params: Promise<{ id: st
 
                                                             <IconButton 
                                                                 size="small" 
-                                                                onClick={(e) => handleUpdateQuantity(e, product.id, cartItem.id, cartItem.quantity + 1)}
+                                                                onClick={(e) => handleUpdateQuantity(e, product.id, cartItem.id!, cartItem.quantity! + 1)}
                                                                 disabled={isUpdating}
                                                                 sx={{ color: 'white', '&:hover': { bgcolor: 'primary.dark' } }}
                                                             >

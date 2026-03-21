@@ -30,7 +30,7 @@ import {
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import MuiBackButton from './MuiBackButton';
 import ConfirmDialog from './ConfirmDialog';
 import CustomTooltip from '../common/CustomTooltip';
@@ -44,6 +44,7 @@ interface TopBarProps {
 export default function MuiTopBar({ onMenuClick }: TopBarProps) {
     const { user, logout } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -66,7 +67,10 @@ export default function MuiTopBar({ onMenuClick }: TopBarProps) {
     const handleProfile = () => {
         handleClose();
         const role = user?.role || 'user';
-        router.push(`/${role}/profile`);
+        const targetPath = `/${role}/profile`;
+        if (pathname !== targetPath) {
+            router.push(targetPath);
+        }
     };
 
     return (
@@ -227,18 +231,14 @@ export default function MuiTopBar({ onMenuClick }: TopBarProps) {
                             },
                         }}
                     >
-                        <MenuItem onClick={handleProfile}>
-                            <ListItemIcon>
-                                <PersonIcon fontSize="small" />
-                            </ListItemIcon>
-                            Profile Settings
-                        </MenuItem>
-                        <MenuItem onClick={handleClose}>
-                            <ListItemIcon>
-                                <SettingsIcon fontSize="small" />
-                            </ListItemIcon>
-                            Account Settings
-                        </MenuItem>
+                        {user?.role !== 'user' && (
+                            <MenuItem onClick={handleProfile}>
+                                <ListItemIcon>
+                                    <PersonIcon fontSize="small" />
+                                </ListItemIcon>
+                                Profile
+                            </MenuItem>
+                        )}
                         <Divider />
                         <MenuItem onClick={() => { setIsLogoutModalOpen(true); handleClose(); }} sx={{ color: 'error.main' }}>
                             <ListItemIcon>

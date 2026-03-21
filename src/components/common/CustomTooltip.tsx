@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Tooltip, TooltipProps, Fade, styled } from '@mui/material';
+import { Tooltip, TooltipProps, Fade, styled, Box } from '@mui/material';
 
 interface CustomTooltipProps extends Omit<TooltipProps, 'children'> {
     children: React.ReactElement<any, any>;
@@ -38,28 +38,42 @@ const CustomTooltip = React.forwardRef<unknown, CustomTooltipProps>((props, ref)
             placement={placement}
             arrow={arrow}
             TransitionComponent={Fade}
-            TransitionProps={{ timeout: 400 }}
-            enterDelay={200}
+            TransitionProps={{ timeout: 200 }}
+            enterDelay={100}
             leaveDelay={0}
-            // Ensure Tooltip is rendered in a Portal and has sensible defaults
+            disableInteractive={true}
             PopperProps={{
+                disablePortal: true, // Render locally as requested in Step 3
                 modifiers: [
                     {
                         name: 'offset',
                         options: {
-                            offset: [0, 8],
+                            offset: [0, 10],
                         },
                     },
                     {
                         name: 'preventOverflow',
                         options: {
                             boundary: 'viewport',
+                            padding: 8,
+                        },
+                    },
+                    {
+                        name: 'flip',
+                        options: {
+                            fallbackPlacements: ['top', 'bottom', 'right', 'left'],
                         },
                     },
                 ],
             }}
         >
-            {children}
+            {/* 
+                Step 3 & 4 Requirement: Each tooltip is independent and anchored locally.
+                We wrap in a relative container to ensure absolute positioning of popper works locally.
+            */}
+            <Box component="span" sx={{ position: 'relative', display: 'inline-flex' }}>
+                {children}
+            </Box>
         </StyledTooltip>
     );
 });

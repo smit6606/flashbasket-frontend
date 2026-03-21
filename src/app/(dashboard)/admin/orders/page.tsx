@@ -172,18 +172,18 @@ export default function AdminOrders() {
 
     const getStatusChip = (status: string) => {
         const configs: any = {
-            'pending': { color: 'warning', label: 'Pending' },
-            'preparing': { color: 'info', label: 'Processing' },
-            'awaiting-assignment': { color: 'secondary', label: 'Processing' },
-            'assigned': { color: 'primary', label: 'Processing' },
-            'accepted-by-partner': { color: 'success', label: 'Processing' },
-            'ready-to-ship': { color: 'info', label: 'Processing' },
-            'shipped': { color: 'primary', label: 'Shipped' },
-            'out-for-delivery': { color: 'warning', label: 'Out for Delivery' },
-            'arrived': { color: 'secondary', label: 'Out for Delivery' },
-            'delivered': { color: 'success', label: 'Completed' },
-            'completed': { color: 'success', label: 'Completed' },
-            'cancelled': { color: 'error', label: 'Cancelled' }
+            'Pending': { color: 'warning', label: 'Pending' },
+            'Preparing': { color: 'info', label: 'Processing' },
+            'Awaiting-Assignment': { color: 'secondary', label: 'Processing' },
+            'Assigned': { color: 'primary', label: 'Processing' },
+            'Accepted-By-Partner': { color: 'success', label: 'Processing' },
+            'Ready-to-Ship': { color: 'info', label: 'Processing' },
+            'Shipped': { color: 'primary', label: 'Shipped' },
+            'Out-for-Delivery': { color: 'warning', label: 'Out for Delivery' },
+            'Arrived': { color: 'secondary', label: 'Out for Delivery' },
+            'Delivered': { color: 'success', label: 'Delivered' },
+            'Completed': { color: 'success', label: 'Completed' },
+            'Cancelled': { color: 'error', label: 'Cancelled' }
         };
         const config = configs[status] || { color: 'default', label: status };
         return <Chip label={config.label} color={config.color} size="small" sx={{ fontWeight: 900, borderRadius: 2 }} />;
@@ -201,8 +201,8 @@ export default function AdminOrders() {
     return (
         <Box sx={{ p: 1 }}>
             <Box sx={{ mb: 6 }}>
-                <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>Logistics Control</Typography>
-                <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1 }}>Monitor global order lifecycle and handle driver dispatching.</Typography>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>Live Orders</Typography>
+                <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1 }}>Monitor and manage active orders across the marketplace.</Typography>
             </Box>
 
             <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
@@ -244,11 +244,11 @@ export default function AdminOrders() {
                         sx={{ borderRadius: 3, fontWeight: 700 }}
                     >
                         <MenuItem value="all">Any Stage</MenuItem>
-                        <MenuItem value="pending">Pending</MenuItem>
-                        <MenuItem value="preparing">Processing</MenuItem>
-                        <MenuItem value="shipped">Shipped</MenuItem>
-                        <MenuItem value="completed">Completed</MenuItem>
-                        <MenuItem value="cancelled">Cancelled</MenuItem>
+                        <MenuItem value="Pending">Pending</MenuItem>
+                        <MenuItem value="Preparing">Processing</MenuItem>
+                        <MenuItem value="Shipped">Shipped</MenuItem>
+                        <MenuItem value="Completed">Completed</MenuItem>
+                        <MenuItem value="Cancelled">Cancelled</MenuItem>
                     </Select>
                 </FormControl>
                 <Divider sx={{ my: 1.5 }} />

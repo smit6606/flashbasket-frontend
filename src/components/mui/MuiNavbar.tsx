@@ -322,9 +322,9 @@ export default function MuiNavbar() {
                                         >
                                             <MenuItem divider onClick={() => { 
                                                 handleClose(); 
-                                                const path = user.role === 'seller' ? '/seller/account' 
+                                                const path = user.role === 'seller' ? '/seller/profile' 
                                                        : user.role === 'delivery' ? '/delivery/profile' 
-                                                       : user.role === 'admin' ? '/admin/settings'
+                                                       : user.role === 'admin' ? '/admin/profile'
                                                        : '/user/profile';
                                                 router.push(path);
                                             }}>Profile</MenuItem>
@@ -340,8 +340,8 @@ export default function MuiNavbar() {
                                             )}
                                             
                                             {user.role === 'user' && [
+                                                <MenuItem key="orders" onClick={() => { handleClose(); router.push('/user/orders'); }}>Orders</MenuItem>,
                                                 <MenuItem key="favourites" onClick={() => { handleClose(); router.push('/user/favourites'); }}>Favourites</MenuItem>,
-                                                <MenuItem key="orders" onClick={() => { handleClose(); router.push('/orders'); }}>Orders</MenuItem>,
                                             ]}
                                             
                                             <Divider />

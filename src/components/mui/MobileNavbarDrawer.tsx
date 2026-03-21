@@ -24,7 +24,9 @@ import {
     PersonAdd as RegisterIcon,
     Logout as LogoutIcon,
     Person as PersonIcon,
-    Dashboard as DashboardIcon
+    Dashboard as DashboardIcon,
+    Favorite as FavoriteIcon,
+    ListAlt as OrderIcon
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -121,17 +123,35 @@ export default function MobileNavbarDrawer({
                             </Box>
                         </ListItem>
                         <ListItem disablePadding sx={{ mb: 1 }}>
-                            <ListItemButton component={Link} href="/dashboard" onClick={onClose} sx={{ borderRadius: 2 }}>
-                                <ListItemIcon><DashboardIcon color="primary" /></ListItemIcon>
-                                <ListItemText primary="Dashboard" primaryTypographyProps={{ fontWeight: 800 }} />
-                            </ListItemButton>
-                        </ListItem>
-                        <ListItem disablePadding sx={{ mb: 1 }}>
-                            <ListItemButton component={Link} href="/profile" onClick={onClose} sx={{ borderRadius: 2 }}>
+                            <ListItemButton component={Link} href={user.role === 'user' ? '/user/profile' : `/${user.role}/profile`} onClick={onClose} sx={{ borderRadius: 2 }}>
                                 <ListItemIcon><PersonIcon color="primary" /></ListItemIcon>
                                 <ListItemText primary="My Profile" primaryTypographyProps={{ fontWeight: 800 }} />
                             </ListItemButton>
                         </ListItem>
+                        
+                        {user.role === 'user' ? (
+                            <>
+                                <ListItem disablePadding sx={{ mb: 1 }}>
+                                    <ListItemButton component={Link} href="/user/orders" onClick={onClose} sx={{ borderRadius: 2 }}>
+                                        <ListItemIcon><OrderIcon color="primary" /></ListItemIcon>
+                                        <ListItemText primary="My Orders" primaryTypographyProps={{ fontWeight: 800 }} />
+                                    </ListItemButton>
+                                </ListItem>
+                                <ListItem disablePadding sx={{ mb: 1 }}>
+                                    <ListItemButton component={Link} href="/user/favourites" onClick={onClose} sx={{ borderRadius: 2 }}>
+                                        <ListItemIcon><FavoriteIcon color="primary" /></ListItemIcon>
+                                        <ListItemText primary="My Favourites" primaryTypographyProps={{ fontWeight: 800 }} />
+                                    </ListItemButton>
+                                </ListItem>
+                            </>
+                        ) : (
+                            <ListItem disablePadding sx={{ mb: 1 }}>
+                                <ListItemButton component={Link} href={`/${user.role}`} onClick={onClose} sx={{ borderRadius: 2 }}>
+                                    <ListItemIcon><DashboardIcon color="primary" /></ListItemIcon>
+                                    <ListItemText primary="Dashboard" primaryTypographyProps={{ fontWeight: 800 }} />
+                                </ListItemButton>
+                            </ListItem>
+                        )}
                     </>
                 )}
 

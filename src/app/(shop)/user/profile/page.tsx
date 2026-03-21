@@ -1,10 +1,11 @@
+'use client';
 import ProfileEditor from '@/components/profile/ProfileEditor';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { Box } from '@mui/material';
 
-export default function UserProfilePage() {
+export default function ProfilePage() {
     return (
-        <ProtectedRoute allowedRoles={['user']}>
+        <Box sx={{ py: 4 }}>
             <ProfileEditor />
-        </ProtectedRoute>
+        </Box>
     );
 }

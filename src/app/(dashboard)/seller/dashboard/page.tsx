@@ -22,6 +22,7 @@ import {
     Download as DownloadIcon,
     MoreVert as MoreIcon,
     ArrowForward as ArrowIcon,
+    WarningAmber as WarningIcon,
 } from '@mui/icons-material';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { api } from '@/lib/api';
@@ -77,6 +78,21 @@ export default function SellerDashboard() {
 
     return (
         <Box sx={{ p: 1 }}>
+            {stats?.sellerStatus === 'Suspended' && (
+                <Card elevation={0} sx={{ mb: 4, borderRadius: 6, bgcolor: alpha('#ef4444', 0.05), border: '1px solid', borderColor: alpha('#ef4444', 0.2) }}>
+                    <CardContent sx={{ p: 2.5 }}>
+                        <Stack direction="row" spacing={2} alignItems="center">
+                            <Box sx={{ p: 1, borderRadius: 3, bgcolor: alpha('#ef4444', 0.1), color: '#ef4444', display: 'flex' }}>
+                                <WarningIcon />
+                            </Box>
+                            <Box>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#ef4444' }}>Account Suspended</Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.secondary' }}>Your account has been suspended by the administrator. Operations are restricted. Contact support for assistance.</Typography>
+                            </Box>
+                        </Stack>
+                    </CardContent>
+                </Card>
+            )}
             <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'flex-end' }} spacing={3} sx={{ mb: 6 }}>
                 <Box>
                     <Typography variant="h3" sx={{ fontWeight: 900, letterSpacing: '-0.02em' }}>Store Dashboard</Typography>
@@ -96,6 +112,7 @@ export default function SellerDashboard() {
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={() => router.push('/seller/catalog/add')}
+                        disabled={stats?.sellerStatus === 'Suspended'}
                         sx={{ px: 3, py: 1.2, borderRadius: 3, fontWeight: 900, boxShadow: '0 8px 20px rgba(12, 131, 31, 0.2)' }}
                     >
                         Add Product
