@@ -47,19 +47,16 @@ export const apiFetch = async (endpoint: string, options: FetchOptions = {}) => 
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
-  if (!(init.body instanceof FormData)) {
+  if (!(init.body instanceof FormData) && init.method !== 'GET' && init.method !== 'HEAD') {
     headers.set('Content-Type', 'application/json');
   }
 
-  const fetchOptions: any = {
+  const fetchOptions: RequestInit = {
     ...init,
     headers,
+    credentials: 'include',
+    mode: 'cors',
   };
-
-  // Add targetAddressSpace for Chrome's Private Network Access compatibility
-  if (API_URL.includes('localhost') || API_URL.includes('127.0.0.1') || API_URL.includes('192.168.')) {
-    fetchOptions.targetAddressSpace = 'local';
-  }
 
   NProgress.start();
 
